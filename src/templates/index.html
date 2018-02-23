@@ -22,6 +22,9 @@
                 <div draggable="true" class="svd_toolbox_item" data-bind="click: $root.clickToolboxItem, event:{dragstart: function(el, e) { $root.draggingToolboxItem($data, e); return true;}, dragend: function(el, e) { $root.dragEnd(); }}">
                     <span data-bind="css: iconName, attr: {title: title}"></span>
                     <span class="svd_toolbox_item_text hidden-sm hidden-xs" data-bind="text:title"></span>
+                    <!-- ko if: $data.isCopied -->
+                    <span class="delete_widget" data-bind="click: function(data,event) { $root.toolbox.removeItem(data.name) }"></span>
+                    <!-- /ko -->
                 </div>
                 <!-- /ko  -->
             </div>
