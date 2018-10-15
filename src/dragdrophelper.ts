@@ -1,9 +1,15 @@
+import * as ko from "knockout";
 import * as Survey from "survey-knockout";
 import { SurveyHelper } from "./surveyHelper";
+
+if (!!ko.options) {
+  ko.options.useOnlyNativeEvents = true;
+}
 
 export class DragDropTargetElement {
   public moveToParent: any;
   public moveToIndex: number;
+  public nestedPanelDepth: number = -1;
   constructor(
     public page: Survey.Page,
     public target: any,
@@ -51,12 +57,32 @@ export class DragDropTargetElement {
   public clear() {
     this.clearByInfo(this.findInfo(this.target, true));
   }
+  public getRows(pnl: Survey.PanelModelBase): Array<any> {
+    return !!pnl["koRows"] ? pnl["koRows"]() : pnl.rows;
+  }
+  protected setRows(pnl: Survey.PanelModelBase, rows: Array<any>) {
+    if (!!pnl["koRows"]) {
+      pnl["koRows"](rows);
+    } else {
+      pnl.setPropertyValue("rows", rows);
+    }
+  }
+  protected getRowElements(row: any): Array<any> {
+    return !!row["koElements"] ? row["koElements"]() : row.elements;
+  }
+  protected setRowElements(row: any, elements: Array<any>) {
+    if (!!row["koElements"]) {
+      row["koElements"](elements);
+    } else {
+      row.setPropertyValue("elements", elements);
+    }
+  }
   private getIndexByInfo(info: any) {
     if (!info) return 0;
-    var rows = info.panel.koRows();
+    var rows = this.getRows(info.panel);
     var index = 0;
     for (var i = 0; i < info.rIndex; i++) {
-      index += rows[i]["koElements"]().length;
+      index += this.getRowElements(rows[i]).length;
     }
     return index + info.elIndex;
   }
@@ -83,10 +109,8 @@ export class DragDropTargetElement {
     return diff < 0 || diff > 1;
   }
   private isLastElementInRow(info: any) {
-    return (
-      info.elIndex ==
-      info.panel["koRows"]()[info.rIndex]["koElements"]().length - 1
-    );
+    var rows = this.getRows(info.panel);
+    return info.elIndex == this.getRowElements(rows[info.rIndex]).length - 1;
   }
   private updateInfo(info: any, isBottom: boolean, isEdge: boolean) {
     if (info.rIndex < 0) return;
@@ -98,9 +122,8 @@ export class DragDropTargetElement {
       } else {
         if (info.elIndex == 0 && info.rIndex > 0) {
           info.rIndex--;
-          info.elIndex = info.panel["koRows"]()[info.rIndex][
-            "koElements"
-          ]().length;
+          var row = this.getRows(info.panel)[info.rIndex];
+          info.elIndex = this.getRowElements(row).length;
         }
       }
     }
@@ -113,45 +136,45 @@ export class DragDropTargetElement {
       this.target.startWithNewLine ||
       info.elIndex < 1 ||
       info.rIndex < 0 ||
-      info.rIndex >= info.panel.koRows().length
+      info.rIndex >= this.getRows(info.panel).length
     ) {
       this.AddInfoAsRow(info);
     } else {
-      var row = info.panel.koRows()[info.rIndex];
-      var elements = row["koElements"]();
+      var row = this.getRows(info.panel)[info.rIndex];
+      var elements = this.getRowElements(row);
       if (info.elIndex < elements.length) {
         elements.splice(info.elIndex, 0, this.target);
       } else {
         elements.push(this.target);
       }
-      row["koElements"](elements);
+      this.setRowElements(row, elements);
       row.updateVisible();
     }
   }
   private AddInfoAsRow(info: any) {
     var row = new Survey.QuestionRow(info.panel);
     row.addElement(this.target);
-    var rows = info.panel.koRows();
-    if (info.rIndex >= 0 && info.rIndex < info.panel.koRows().length) {
+    var rows = this.getRows(info.panel);
+    if (info.rIndex >= 0 && info.rIndex < this.getRows(info.panel).length) {
       rows.splice(info.rIndex, 0, row);
     } else {
       rows.push(row);
     }
-    info.panel.koRows(rows);
+    this.setRows(info.panel, rows);
   }
   private clearByInfo(info: any) {
     if (info == null) return;
-    var rows = info.panel.koRows();
+    var rows = this.getRows(info.panel);
     if (info.rIndex < 0 || info.rIndex >= rows.length) return;
     var row = rows[info.rIndex];
-    var elements = row["koElements"]();
-    if (row["koElements"]().length > 1) {
+    var elements = this.getRowElements(row);
+    if (elements.length > 1) {
       elements.splice(info.elIndex, 1);
-      row["koElements"](elements);
+      this.setRowElements(row, elements);
       row.updateVisible();
     } else {
       rows.splice(info.rIndex, 1);
-      info.panel.koRows(rows);
+      this.setRows(info.panel, rows);
     }
   }
   private isInfoEquals(a: any, b: any): boolean {
@@ -161,7 +184,28 @@ export class DragDropTargetElement {
     );
   }
   private findInfo(el: any, isEdge: boolean = false): any {
-    return this.findInfoInPanel(this.page, el, isEdge, el);
+    var res = this.findInfoInPanel(this.page, el, isEdge, el);
+    if (
+      res &&
+      this.target &&
+      this.target.isPanel &&
+      this.nestedPanelDepth > -1
+    ) {
+      var parents = this.getParentElements(res.panel);
+      if (this.nestedPanelDepth + 1 < parents.length) {
+        res.panel = parents[this.nestedPanelDepth];
+        res.element = parents[this.nestedPanelDepth + 1];
+      }
+    }
+    return res;
+  }
+  private getParentElements(panel: any): Array<any> {
+    var res = [];
+    while (panel) {
+      res.unshift(panel);
+      panel = panel.parent;
+    }
+    return res;
   }
 
   private findInfoInPanel(
@@ -184,10 +228,10 @@ export class DragDropTargetElement {
       }
       return { panel: parent, rIndex: 0, elIndex: 0, element: panel };
     }
-    var rows = panel["koRows"]();
+    var rows = this.getRows(panel);
     for (var i = 0; i < rows.length; i++) {
       var row = rows[i];
-      var elements = row["koElements"]();
+      var elements = this.getRowElements(row);
       for (var j = 0; j < elements.length; j++) {
         var element = elements[j];
         if (element.isPanel) {
@@ -234,6 +278,7 @@ export class DragDropTargetElement {
 
 export class DragDropHelper {
   public static edgeHeight: number = 20;
+  public static nestedPanelDepth: number = -1;
   static dataStart: string = "surveyjs,";
   static dragData: any = { text: "", json: null };
   static prevEvent = { element: null, x: -1, y: -1 };
@@ -253,6 +298,44 @@ export class DragDropHelper {
       parent && <HTMLElement>parent.querySelector("#scrollableDiv");
     this.prevCoordinates = { x: -1, y: -1 };
   }
+  public attachToElement(domElement, surveyElement) {
+    domElement.style.opacity = surveyElement.koIsDragging() ? 0.4 : 1;
+    domElement.draggable = surveyElement.allowingOptions.allowDragging;
+    domElement.ondragover = function(e) {
+      if (!surveyElement.allowingOptions.allowDragging) return false;
+      if (!e["markEvent"]) {
+        e["markEvent"] = true;
+        surveyElement.dragDropHelper().doDragDropOver(e, surveyElement, true);
+        return false;
+      }
+    };
+    domElement.ondrop = function(e) {
+      if (!e["markEvent"]) {
+        e["markEvent"] = true;
+        surveyElement.dragDropHelper().doDrop(e);
+      }
+    };
+    domElement.ondragstart = function(e: DragEvent) {
+      var target: any = e.target || e.srcElement;
+      if (
+        !!target &&
+        !!target.contains &&
+        target.contains(document.activeElement)
+      ) {
+        e.preventDefault();
+        return false;
+      }
+      if (!surveyElement.allowingOptions.allowDragging) return false;
+      if (!e["markEvent"]) {
+        e["markEvent"] = true;
+        surveyElement.dragDropHelper().startDragQuestion(e, surveyElement);
+      }
+      e.cancelBubble = true;
+    };
+    domElement.ondragend = function(e) {
+      surveyElement.dragDropHelper().end();
+    };
+  }
   public get survey(): Survey.Survey {
     return <Survey.Survey>this.data;
   }
@@ -268,6 +351,7 @@ export class DragDropHelper {
     elementJson: any
   ) {
     this.prepareData(event, elementName, elementJson);
+    event.cancelBubble = true;
   }
   public isSurveyDragging(event: DragEvent): boolean {
     if (!event) return false;
@@ -288,10 +372,24 @@ export class DragDropHelper {
       this.isSamePlace(event, element)
     )
       return;
+
+    element = this.replaceTargetElement(element);
+
     var bottomInfo = this.isBottom(event, element);
     isEdge = element.isPanel ? isEdge && bottomInfo.isEdge : true;
     if (element.isPanel && !isEdge && element.elements.length > 0) return;
     this.ddTarget.moveTo(element, bottomInfo.isBottom, isEdge);
+  }
+  public replaceTargetElement(element) {
+    if (
+      element.getType &&
+      element.getType() === "page" &&
+      element.elements.length !== 0
+    ) {
+      var elements = element.elements;
+      element = elements[elements.length - 1];
+    }
+    return element;
   }
   public end() {
     if (this.ddTarget) {
@@ -299,6 +397,9 @@ export class DragDropHelper {
     }
     this.isScrollStop = true;
     this.clearData();
+  }
+  public get isMoving(): boolean {
+    return this.ddTarget && this.ddTarget.source;
   }
   public doDrop(event: DragEvent) {
     if (event.stopPropagation) {
@@ -450,6 +551,7 @@ export class DragDropHelper {
       targetElement,
       null
     );
+    this.ddTarget.nestedPanelDepth = DragDropHelper.nestedPanelDepth;
   }
   private setData(event: DragEvent, text: string) {
     if (event["originalEvent"]) {
@@ -474,7 +576,7 @@ export class DragDropHelper {
     return DragDropHelper.dragData;
   }
   private clearData() {
-    //this.ddTarget = null;
+    this.ddTarget = null; // We should reset ddTarget to null due to the https://surveyjs.answerdesk.io/ticket/details/T1003 - onQuestionAdded not fired after D&D
     DragDropHelper.dragData = { text: "", json: null };
     var prev = DragDropHelper.prevEvent;
     prev.element = null;

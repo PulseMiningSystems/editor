@@ -44,6 +44,140 @@ QUnit.test("toolbox reorder items", function(assert) {
   assert.equal(toolbox.items[2].name, "text");
 });
 
+QUnit.test("toolbox several categories", function(assert) {
+  var toolbox = new QuestionToolbox(["text", "dropdown"]);
+  assert.equal(toolbox.koHasCategories(), false, "There is only one category");
+  toolbox.addItem(<any>{ name: "countries", category: "additional" });
+  assert.equal(toolbox.koHasCategories(), true, "There are two categories");
+  assert.equal(
+    toolbox.koActiveCategory(),
+    (<any>toolbox.koCategories()[0]).name,
+    "The first category is active"
+  );
+  assert.equal(
+    (<any>toolbox.koCategories()[0]).items.length,
+    2,
+    "Two items in the first category"
+  );
+  assert.equal(
+    (<any>toolbox.koCategories()[1]).items.length,
+    1,
+    "One item in the second category"
+  );
+  assert.equal(
+    (<any>toolbox.koCategories()[1]).name,
+    "additional",
+    "The second category is named 'additional'"
+  );
+  assert.equal(
+    (<any>toolbox.koCategories()[0]).koCollapsed(),
+    false,
+    "the first category is not collapsed by default"
+  );
+  assert.equal(
+    (<any>toolbox.koCategories()[1]).koCollapsed(),
+    true,
+    "the second category is collapsed by default"
+  );
+  toolbox.koActiveCategory("additional");
+  assert.equal(
+    (<any>toolbox.koCategories()[0]).koCollapsed(),
+    true,
+    "the first category is not collapsed now"
+  );
+  assert.equal(
+    (<any>toolbox.koCategories()[1]).koCollapsed(),
+    false,
+    "the second category is collapsed now"
+  );
+});
+
+QUnit.test("toolbox change categories", function(assert) {
+  var toolbox = new QuestionToolbox([
+    "text",
+    "dropdown",
+    "checkbox",
+    "radiogroup",
+    "comment",
+    "matrix"
+  ]);
+  assert.equal(
+    toolbox.koCategories().length,
+    1,
+    "There is one category by default"
+  );
+  toolbox.changeCategories([
+    { name: "comment", category: "comment" },
+    { name: "matrix", category: "matrix" }
+  ]);
+  assert.equal(toolbox.koCategories().length, 3, "There are 3 categories now");
+  toolbox.changeCategory("radiogroup", "radio");
+  assert.equal(toolbox.koCategories().length, 4, "There are 4 categories now");
+});
+QUnit.test(
+  "toolbox categories + allowExpandMultipleCategories property",
+  function(assert) {
+    var toolbox = new QuestionToolbox([
+      "text",
+      "dropdown",
+      "checkbox",
+      "radiogroup",
+      "comment",
+      "matrix"
+    ]);
+    toolbox.changeCategories([
+      { name: "comment", category: "comment" },
+      { name: "matrix", category: "matrix" }
+    ]);
+    assert.equal(
+      toolbox.activeCategory,
+      "General",
+      "By default 'General' is active category"
+    );
+    toolbox.allowExpandMultipleCategories = true;
+    assert.equal(toolbox.activeCategory, "", "There is no active category now");
+    toolbox.changeCategory("dropdown", "comment");
+    assert.equal(
+      toolbox.activeCategory,
+      "",
+      "There is still no active category now"
+    );
+    assert.equal(
+      (<any>toolbox.koCategories()[0]).koCollapsed(),
+      false,
+      "The first category is expaneded"
+    );
+    assert.equal(
+      (<any>toolbox.koCategories()[1]).name,
+      "comment",
+      "The second category is 'comment'"
+    );
+    toolbox.expandCategory("comment");
+    assert.equal(
+      (<any>toolbox.koCategories()[1]).koCollapsed(),
+      false,
+      "The second category is expaneded"
+    );
+    toolbox.collapseCategory("comment");
+    assert.equal(
+      (<any>toolbox.koCategories()[1]).koCollapsed(),
+      true,
+      "The second category is collapsed"
+    );
+    toolbox.expandAllCategories();
+    assert.equal(
+      (<any>toolbox.koCategories()[2]).koCollapsed(),
+      false,
+      "All categories are expanded"
+    );
+    toolbox.collapseAllCategories();
+    assert.equal(
+      (<any>toolbox.koCategories()[0]).koCollapsed(),
+      true,
+      "All categories are collapsed"
+    );
+  }
+);
 QUnit.test("toolbox copied questions", function(assert) {
   var toolbox = new QuestionToolbox(["text", "dropdown"]);
   assert.equal(toolbox.copiedItems.length, 0, "There is no copied questions");

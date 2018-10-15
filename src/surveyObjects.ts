@@ -12,6 +12,7 @@ export class SurveyObjectItem {
 export class SurveyObjects {
   public static intend: string = ".";
   surveyValue: Survey.Survey;
+  public getItemTextCallback: (obj: Survey.Base, text: string) => string;
 
   constructor(public koObjects: any, public koSelected: any) {}
   public get survey(): Survey.Survey {
@@ -114,12 +115,12 @@ export class SurveyObjects {
     }
     return res;
   }
-  private getSelectedQuestion(): Survey.QuestionBase {
+  private getSelectedQuestion(): Survey.Question {
     if (!this.koSelected()) return null;
     var obj = this.koSelected().value;
     if (!obj) return null;
     return SurveyHelper.getObjectType(obj) == ObjType.Question
-      ? <Survey.QuestionBase>obj
+      ? <Survey.Question>obj
       : null;
   }
   private addItem(item: SurveyObjectItem, index: number) {
@@ -185,6 +186,10 @@ export class SurveyObjects {
     for (var i = 1; i < item.level; i++) {
       intend += SurveyObjects.intend;
     }
-    return intend + SurveyHelper.getObjectName(item.value);
+    var text = SurveyHelper.getObjectName(item.value);
+    if (this.getItemTextCallback) {
+      text = this.getItemTextCallback(item.value, text);
+    }
+    return intend + text;
   }
 }

@@ -7,7 +7,10 @@ import {
   SurveyPropertyEditorBase,
   ISurveyObjectEditorOptions
 } from "../src/propertyEditors/propertyEditorBase";
-import { SurveyPropertyItemValuesEditor } from "../src/propertyEditors/propertyItemValuesEditor";
+import {
+  SurveyPropertyItemValuesEditor,
+  SurveyPropertyItemValuesEditorItem
+} from "../src/propertyEditors/propertyItemValuesEditor";
 import { SurveyPropertyDropdownColumnsEditor } from "../src/propertyEditors/propertyMatrixDropdownColumnsEditor";
 import { defaultStrings } from "../src/editorLocalization";
 
@@ -44,6 +47,18 @@ QUnit.test("Created properties on set selected Object", function(assert) {
     "maxWeight property"
   );
   assert.equal(editor.koProperties()[1].name, "name", "name property");
+});
+QUnit.test("Custom sort properties", function(assert) {
+  var editor = new SurveyObjectEditor();
+  editor.onSortPropertyCallback = function(obj, a, b) {
+    if (a.name == "name") return -1;
+    if (b.name == "name") return 1;
+    return 0;
+  };
+  editor.selectedObject = new Truck();
+
+  assert.equal(editor.koProperties().length, 3, "Two property object");
+  assert.equal(editor.koProperties()[0].name, "name", "name property");
 });
 QUnit.test("Get Property Value", function(assert) {
   var editor = new SurveyObjectEditor();
@@ -185,13 +200,19 @@ QUnit.test("Use onCanShowPropertyCallback", function(assert) {
 class EditorOptionsTests implements ISurveyObjectEditorOptions {
   alwaySaveTextInPropertyEditors: boolean;
   showApplyButtonInEditors: boolean;
+  useTabsInElementEditor: boolean;
   propertyName: string;
-  onItemValueAddedCallback(propertyName: string, itemValue: Survey.ItemValue) {
-    itemValue.value = "item1";
+  onItemValueAddedCallback(
+    propertyName: string,
+    itemValue: Survey.ItemValue,
+    itemValues: Array<Survey.ItemValue>
+  ) {
+    itemValue.value = "item" + (itemValues.length + 1);
     this.propertyName = propertyName;
   }
-  onMatrixDropdownColumnAddedCallback(column: Survey.MatrixDropdownColumn) {
+  onMatrixDropdownColumnAddedCallback(matrix: Survey.Question, column: Survey.MatrixDropdownColumn, columns: Array<Survey.MatrixDropdownColumn>) {
     column.name = "column1";
+    matrix["columnCount"] = columns.length;
   }
   onSetPropertyEditorOptionsCallback(
     propertyName: string,
@@ -202,6 +223,12 @@ class EditorOptionsTests implements ISurveyObjectEditorOptions {
       editorOptions.allowAddRemoveItems = false;
     }
   }
+  onPropertyEditorKeyDownCallback(
+    propertyName: string,
+    obj: Survey.Base,
+    editor: SurveyPropertyEditorBase,
+    event: KeyboardEvent
+  ) {}
   onGetErrorTextOnValidationCallback(
     propertyName: string,
     obj: Survey.Base,
@@ -224,6 +251,9 @@ class EditorOptionsTests implements ISurveyObjectEditorOptions {
     if (obj["name"] == "showOnBottom") res.bottom = "bottomValue";
     return res;
   }
+  onGetElementEditorTitleCallback(obj: Survey.Base, title: string): string {
+    return title;
+  }
 }
 
 QUnit.test("On new ItemValue added", function(assert) {
@@ -242,6 +272,10 @@ QUnit.test("On new ItemValue added", function(assert) {
   assert.equal(question.choices.length, 1, "One item is added");
   assert.equal(question.choices[0].value, "item1", "auto generated value");
   assert.equal(options.propertyName, "choices", "property name set correcty");
+  itemValuesEditor.onAddClick();
+  itemValuesEditor.onApplyClick();
+  assert.equal(question.choices.length, 2, "Two items are added");
+  assert.equal(question.choices[1].value, "item2", "auto generated value 2");
 });
 
 QUnit.test("On new Matrix Column added", function(assert) {
@@ -254,9 +288,10 @@ QUnit.test("On new Matrix Column added", function(assert) {
     question.columns = options.newValue;
   });
   var property = <SurveyObjectProperty>editor.getPropertyEditor("columns");
-  var itemValuesEditor = <SurveyPropertyDropdownColumnsEditor>property.editor;
-  itemValuesEditor.onAddClick();
-  itemValuesEditor.onApplyClick();
+  var columnsEditor = <SurveyPropertyDropdownColumnsEditor>property.editor;
+  columnsEditor.onAddClick();
+  assert.equal(question["columnCount"], 1, "1 column in editor");
+  columnsEditor.onApplyClick();
   assert.equal(question.columns.length, 1, "One item is added");
   assert.equal(
     question.columns[0].name,
@@ -326,4 +361,81 @@ QUnit.test("show top/bottom description", function(assert) {
     "",
     "bottom value should not be set"
   );
+});
+
+QUnit.test("SurveyPropertyItemValuesEditor, show 'Visible If' button", function(
+  assert
+) {
+  var options = new EditorOptionsTests();
+  var editor = new SurveyObjectEditor(options);
+  var qChoices = new Survey.QuestionDropdown("q1");
+  var qMatrix = new Survey.QuestionMatrix("q2");
+
+  editor.selectedObject = qChoices;
+  var property = <SurveyObjectProperty>editor.getPropertyEditor("choices");
+  var itemValuesEditor = <SurveyPropertyItemValuesEditor>property.editor;
+  assert.equal(
+    itemValuesEditor.hasDetailButton,
+    true,
+    "Choices property has Rules button"
+  );
+
+  editor.selectedObject = qMatrix;
+  var property = <SurveyObjectProperty>editor.getPropertyEditor("columns");
+  var itemValuesEditor = <SurveyPropertyItemValuesEditor>property.editor;
+  assert.equal(
+    itemValuesEditor.hasDetailButton,
+    true,
+    "Columns property has Rules button now"
+  );
+});
+
+QUnit.test("SurveyPropertyItemValuesEditor, Detail tabs", function(assert) {
+  var visibleIfProperty = Survey.JsonObject.metaData.findProperty(
+    "itemvalue",
+    "visibleIf"
+  );
+  if (!visibleIfProperty) {
+    Survey.JsonObject.metaData.addProperty("itemvalue", {
+      name: "visibleIf:condition",
+      visible: false
+    });
+  }
+  var options = new EditorOptionsTests();
+  var editor = new SurveyObjectEditor(options);
+  var qChoices = new Survey.QuestionDropdown("q1");
+  qChoices.choices = [1, 2, 3];
+
+  editor.selectedObject = qChoices;
+  var property = <SurveyObjectProperty>editor.getPropertyEditor("choices");
+  var itemValuesEditor = <SurveyPropertyItemValuesEditor>property.editor;
+  itemValuesEditor.beforeShow();
+  var firstItem = <SurveyPropertyItemValuesEditorItem>(
+    itemValuesEditor.koItems()[0]
+  );
+  itemValuesEditor.koEditItem(firstItem);
+  assert.equal(firstItem.itemEditor.koTabs().length, 1, "There is one tab");
+  assert.equal(
+    firstItem.itemEditor.koTabs()[0].name,
+    "visibleIf",
+    "It is visibleIf tab"
+  );
+  firstItem.item["visibleIf"] = "{cars} contains {item}";
+  itemValuesEditor.koEditItem(null);
+  assert.equal(
+    itemValuesEditor.koShowTextView(),
+    false,
+    "visibleIf will be lost in text editing"
+  );
+  /* TODO add it later
+  itemValuesEditor.apply();
+  assert.equal(
+    qChoices.choices[0]["visibleIf"],
+    "{cars} contains {item}",
+    "visibleIf has been saved"
+  );
+  */
+  if (!visibleIfProperty) {
+    Survey.JsonObject.metaData.removeProperty("itemvalue", "visibleIf");
+  }
 });

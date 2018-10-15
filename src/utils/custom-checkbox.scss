@@ -1,6 +1,7 @@
 .sjs-cb-wrapper {
   display: inline-block;
   margin-right: 1em;
+  line-height: 2em;
 }
 
 .sjs-cb-container {
@@ -24,15 +25,6 @@
   left: 0;
   height: 22px;
   width: 22px;
-  background-color: #eee;
-}
-
-.sjs-cb-container:hover input ~ .checkmark {
-  background-color: #ccc;
-}
-
-.sjs-cb-container input:checked ~ .checkmark {
-  background-color: #1ab394;
 }
 
 .checkmark:after {

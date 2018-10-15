@@ -1,12 +1,16 @@
 import * as ko from "knockout";
 import { editorLocalization } from "./editorLocalization";
 import * as Survey from "survey-knockout";
-import createDdmenu from "./utils/ddmenu";
+import { findParentNode } from "./utils/utils";
+import { StylesManager } from "./stylesmanager";
 
 export interface ISurveyObjectMenuItem {
   name: string;
   text: string;
   onClick: (obj: Survey.Base) => any;
+  icon?: string | (() => string);
+  hasTitle?: boolean;
+  template?: string;
 }
 
 export class SurveyForDesigner extends Survey.Survey {
@@ -21,6 +25,10 @@ export class SurveyForDesigner extends Survey.Survey {
     any
   > = new Survey.Event<(sender: Survey.Survey, options: any) => any, any>();
   public onGetMenuItems: Survey.Event<
+    (sender: Survey.Survey, options: any) => any,
+    any
+  > = new Survey.Event<(sender: Survey.Survey, options: any) => any, any>();
+  public onElementDoubleClick: Survey.Event<
     (sender: Survey.Survey, options: any) => any,
     any
   > = new Survey.Event<(sender: Survey.Survey, options: any) => any, any>();
@@ -45,6 +53,8 @@ export class SurveyForDesigner extends Survey.Survey {
     this.editQuestionClick = function() {
       self.onEditButtonClick.fire(self, null);
     };
+    this.onUpdateQuestionCssClasses.add(onUpdateQuestionCssClasses);
+    this.onUpdatePanelCssClasses.add(onUpdateQuestionCssClasses);
   }
   public updateElementAllowingOptions(obj: Survey.Base) {
     if (this.onUpdateElementAllowingOptions && obj["allowingOptions"]) {
@@ -81,6 +91,9 @@ export class SurveyForDesigner extends Survey.Survey {
       newElement: value
     });
   }
+  public doElementDoubleClick(obj: Survey.Base) {
+    this.onElementDoubleClick.fire(this, { element: obj });
+  }
   public getEditorLocString(value: string): string {
     return editorLocalization.getString(value);
   }
@@ -96,46 +109,58 @@ function getSurvey(el: any): any {
 function panelBaseOnCreating(self: any) {
   self.dragEnterCounter = 0;
   self.emptyElement = null;
-  self.koRows.subscribe(function(changes) {
+  self.rowCount = ko.computed(function() {
+    var rows = !!self["koRow"] ? self["koRows"]() : self.rows;
+    return rows.length;
+  }, self);
+  self.rowCount.subscribe(function(value) {
     if (self.emptyElement) {
-      self.emptyElement.style.display = self.koRows().length > 0 ? "none" : "";
+      self.emptyElement.style.display = value > 0 ? "none" : "";
     }
   });
 }
 
-function elementOnCreating(self: any, className: string) {
-  self.allowingOptions = {
+function elementOnCreating(surveyElement: any) {
+  surveyElement.allowingOptions = {
     allowDelete: true,
     allowEdit: true,
     allowCopy: true,
     allowAddToToolbox: true,
     allowDragging: true,
-    allowChangeType: true
+    allowChangeType: true,
+    allowShowHideTitle: true,
+    allowChangeRequired: true
   };
-  self.dragDropHelperValue = null;
-  self.dragDropHelper = function() {
-    if (self.dragDropHelperValue == null) {
-      self.dragDropHelperValue = getSurvey(self)["dragDropHelper"];
+  surveyElement.dragDropHelperValue = null;
+  surveyElement.dragDropHelper = function() {
+    if (surveyElement.dragDropHelperValue == null) {
+      surveyElement.dragDropHelperValue = getSurvey(surveyElement)[
+        "dragDropHelper"
+      ];
     }
-    return self.dragDropHelperValue;
+    return surveyElement.dragDropHelperValue;
   };
-  self.renderedElement = null;
-  self.addonsElement = null;
-  self.koIsDragging = ko.observable(false);
-  self.koIsSelected = ko.observable(false);
-  self.koIsDragging.subscribe(function(newValue) {
-    if (self.renderedElement) {
-      self.renderedElement.style.opacity = newValue ? 0.4 : 1;
+  surveyElement.renderedElement = null;
+  surveyElement.koIsDragging = ko.observable(false);
+  surveyElement.koIsSelected = ko.observable(false);
+  surveyElement.koIsDragging.subscribe(function(newValue) {
+    if (surveyElement.renderedElement) {
+      surveyElement.renderedElement.style.opacity = newValue ? 0.4 : 1;
     }
   });
-  self.koIsSelected.subscribe(function(newValue) {
-    if (self.renderedElement) {
-      var newClass = className;
-      if (newValue) newClass += " svd_q_selected ";
-      self.renderedElement.className = newClass;
-    }
-    if (self.addonsElement) {
-      self.addonsElement.style.display = newValue ? "" : "none";
+  surveyElement.koIsSelected.subscribe(function(newValue) {
+    if (surveyElement.renderedElement) {
+      if (newValue) {
+        surveyElement.renderedElement.classList.add(
+          "svd_q_selected",
+          "svd-main-border-color"
+        );
+      } else {
+        surveyElement.renderedElement.classList.remove(
+          "svd_q_selected",
+          "svd-main-border-color"
+        );
+      }
     }
   });
 }
@@ -157,11 +182,6 @@ function addEmptyPanelElement(
   return eDiv;
 }
 
-const question_design_class: string =
-  "sv_qstn svd_question well well-sm card card-block svd_q_design_border";
-const panel_design_class: string =
-  "sv_p_container svd_question well well-sm card card-block svd_q_design_border";
-
 function createQuestionDesignItem(obj: any, item: any): HTMLLIElement {
   var res = <HTMLLIElement>document.createElement("li");
   var btn = document.createElement("button");
@@ -175,105 +195,152 @@ function createQuestionDesignItem(obj: any, item: any): HTMLLIElement {
   return res;
 }
 
-function createElementAddons(
-  obj: Survey.Base,
-  data: any,
-  isPanel: boolean
-): HTMLElement {
-  var main: HTMLDivElement = document.createElement("div");
-  main.className = "svd_question_menu btn-group";
-  main["role"] = "group";
-  var btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "btn btn-primary btn-sm btn-xs";
-  btn.onclick = function(e) {
-    data.editQuestionClick();
-  };
-  var span = document.createElement("span");
-  span.innerText = data.getEditorLocString("survey.edit");
-  btn.appendChild(span);
-  if (obj["allowingOptions"] && obj["allowingOptions"].allowEdit) {
-    main.appendChild(btn);
-  }
-
-  var nodes = [];
-  var menuItems = data.getMenuItems(obj);
-  if (menuItems.length > 0) {
-    for (var i = 0; i < menuItems.length; i++) {
-      nodes.push(createQuestionDesignItem(obj, menuItems[i]));
-    }
-    var ddmenu = createDdmenu(nodes, "element-addons");
-
-    main.appendChild(ddmenu);
-  }
-
-  return main;
-}
-
-//var lastElementOnClick: HTMLElement = null;
-
 function elementOnAfterRendering(
-  el: any,
-  self: any,
-  className: string,
+  domElement: any,
+  surveyElement: any,
   isPanel: boolean,
   disable: boolean
 ) {
-  self.renderedElement = el;
-  getSurvey(self).updateElementAllowingOptions(self);
-  var newClass = className;
-  if (self.koIsSelected()) newClass += " svd_q_selected";
-
-  el.className = newClass;
-  el.style.opacity = self.koIsDragging() ? 0.4 : 1;
-  el.draggable = self.allowingOptions.allowDragging;
-  el.ondragover = function(e) {
-    if (!self.allowingOptions.allowDragging) return false;
+  surveyElement.renderedElement = domElement;
+  surveyElement.renderedElement.classList.add("svd_question");
+  if (StylesManager.currentTheme() === "bootstrap") {
+    surveyElement.renderedElement.classList.add("svd-dark-bg-color");
+  }
+  surveyElement.renderedElement.classList.add("svd_q_design_border");
+  getSurvey(surveyElement).updateElementAllowingOptions(surveyElement);
+  if (surveyElement.koIsSelected())
+    surveyElement.renderedElement.classList.add(
+      "svd_q_selected",
+      "svd-main-border-color"
+    );
+  surveyElement.dragDropHelper().attachToElement(domElement, surveyElement);
+  domElement.tabindex = "0";
+  domElement.onclick = function(e) {
     if (!e["markEvent"]) {
       e["markEvent"] = true;
-      self.dragDropHelper().doDragDropOver(e, self, true);
-    }
-  };
-  el.ondrop = function(e) {
-    if (!e["markEvent"]) {
-      e["markEvent"] = true;
-      self.dragDropHelper().doDrop(e);
-    }
-  };
-  el.ondragstart = function(e) {
-    if (!self.allowingOptions.allowDragging) return false;
-    if (!e["markEvent"]) {
-      e["markEvent"] = true;
-      self.dragDropHelper().startDragQuestion(e, self);
-    }
-  };
-  el.ondragend = function(e) {
-    self.dragDropHelper().end();
-  };
-  el.onclick = function(e) {
-    if (!e["markEvent"]) {
-      e["markEvent"] = true;
-      if (self.parent) {
-        getSurvey(self)["selectedElement"] = self;
+      if (surveyElement.parent) {
+        getSurvey(surveyElement)["selectedElement"] = surveyElement;
       }
     }
   };
-  el.onkeydown = function(e) {
-    if (e.witch == 46) getSurvey(self).deleteCurrentObjectClick();
-    return true;
+  domElement.onkeyup = function(e) {
+    var char = e.which || e.keyCode;
+    if (char === 0x13 || char === 0x20) {
+      domElement.click();
+    }
   };
-  disable = disable && !(self.getType() == "paneldynamic"); //TODO
+  // el.onkeydown = function(e) {
+  //   if (e.witch == 46) getSurvey(surveyElement).deleteCurrentObjectClick();
+  //   return true;
+  // };
+  domElement.ondblclick = function(e) {
+    getSurvey(surveyElement).doElementDoubleClick(surveyElement);
+  };
+  disable = disable && !(surveyElement.getType() == "paneldynamic"); //TODO
   if (disable) {
-    var childs = el.childNodes;
+    var childs = domElement.childNodes;
     for (var i = 0; i < childs.length; i++) {
       if (childs[i].style) childs[i].style.pointerEvents = "none";
     }
   }
-  if (!self.selectedElementInDesign || self.selectedElementInDesign === self) {
-    self.addonsElement = createElementAddons(self, getSurvey(self), isPanel);
-    self.addonsElement.style.display = self.koIsSelected() ? "" : "none";
-    el.appendChild(self.addonsElement);
+  var setTabIndex = element => {
+    element.tabIndex = -1;
+  };
+  ["input", "select", "textarea"].forEach(sel => {
+    var elements = domElement.querySelectorAll(sel);
+    for (var i = 0; i < elements.length; i++) {
+      setTabIndex(elements[i]);
+    }
+  });
+
+  addAdorner(domElement, surveyElement);
+}
+
+var adornersConfig: { [index: string]: any[] } = {};
+
+export function registerAdorner(name, adorner) {
+  if (!adornersConfig[name]) {
+    adornersConfig[name] = [];
   }
+  adornersConfig[name].push(adorner);
+}
+export function removeAdorners(names: string[] = undefined) {
+  if (names !== undefined) {
+    (names || []).forEach(name => delete adornersConfig[name]);
+  } else {
+    adornersConfig = {};
+  }
+}
+
+function onUpdateQuestionCssClasses(survey, options) {
+  var classes = options.panel ? options.cssClasses.panel : options.cssClasses;
+  Object.keys(adornersConfig).forEach(element => {
+    adornersConfig[element].forEach(adorner => {
+      var classesElementName = adorner.getElementName(
+        options.question || options.panel
+      );
+      var adornerMarkerClass = adorner.getMarkerClass(
+        options.question || options.panel
+      );
+
+      classes[classesElementName] = applyAdornerClass(
+        classes[classesElementName],
+        adornerMarkerClass
+      );
+    });
+  });
+}
+
+export function applyAdornerClass(classes, adornerClass) {
+  var result = classes;
+
+  if (!!adornerClass) {
+    result = !!result ? result + " " + adornerClass : adornerClass;
+  }
+
+  return result;
+}
+
+function filterNestedQuestions(rootQuestionNode, elements) {
+  var targetElements = [];
+  for (var i = 0; i < elements.length; i++) {
+    var questionElement = findParentNode("svd_question", elements[i]);
+    if (questionElement === rootQuestionNode) {
+      targetElements.push(elements[i]);
+    }
+  }
+  return targetElements;
+}
+
+function addAdorner(node, model) {
+  Object.keys(adornersConfig).forEach(element => {
+    adornersConfig[element].forEach(adorner => {
+      var elementClass = adorner.getMarkerClass(model);
+      if (!!elementClass) {
+        var elements = node.querySelectorAll(
+          "." + elementClass.replace(/\s/g, ".")
+        );
+        var temp = [];
+        for (var i = 0; i < elements.length; i++) {
+          temp.push(elements[i]);
+        }
+        elements = temp;
+        if (node.className.split(" ").indexOf(elementClass) !== -1) {
+          elements.unshift(node);
+        }
+        elements = filterNestedQuestions(node, elements);
+        if (
+          elements.length === 0 &&
+          node.className.indexOf(elementClass) !== -1
+        ) {
+          elements = [node];
+        }
+        if (elements.length > 0) {
+          adorner.afterRender(elements, model, getSurvey(model).getEditor());
+        }
+      }
+    });
+  });
 }
 
 Survey.Page.prototype["onCreating"] = function() {
@@ -299,30 +366,20 @@ Survey.Page.prototype["onAfterRenderPage"] = function(el) {
   el.ondrop = function(e) {
     dragDropHelper.doDrop(e);
   };
-  if (this.elements.length == 0) {
-    this.emptyElement = addEmptyPanelElement(el, dragDropHelper, self);
-  }
 };
 
 Survey.Panel.prototype["onCreating"] = function() {
   panelBaseOnCreating(this);
-  elementOnCreating(this, panel_design_class);
+  elementOnCreating(this);
 };
 
 Survey.Panel.prototype["onAfterRenderPanel"] = function(el) {
   if (!getSurvey(this).isDesignMode) return;
-  var rows = this.koRows();
   var self = this;
   if (this.elements.length == 0) {
     this.emptyElement = addEmptyPanelElement(el, self.dragDropHelper(), self);
   }
-  elementOnAfterRendering(
-    el,
-    this,
-    panel_design_class,
-    true,
-    this.koIsDragging()
-  );
+  elementOnAfterRendering(el, this, true, this.koIsDragging());
 };
 
 Survey.Panel.prototype["onSelectedElementChanged"] = function() {
@@ -330,16 +387,20 @@ Survey.Panel.prototype["onSelectedElementChanged"] = function() {
   this.koIsSelected(getSurvey(this)["selectedElementValue"] == this);
 };
 
-Survey.QuestionBase.prototype["onCreating"] = function() {
-  elementOnCreating(this, question_design_class);
+var questionPrototype = !!Survey["QuestionBase"]
+  ? Survey["QuestionBase"].prototype
+  : Survey.Question.prototype;
+
+questionPrototype["onCreating"] = function() {
+  elementOnCreating(this);
 };
 
-Survey.QuestionBase.prototype["onAfterRenderQuestion"] = function(el) {
+questionPrototype["onAfterRenderQuestion"] = function(el) {
   if (!getSurvey(this).isDesignMode) return;
-  elementOnAfterRendering(el, this, question_design_class, false, true);
+  elementOnAfterRendering(el, this, false, true);
 };
 
-Survey.QuestionBase.prototype["onSelectedElementChanged"] = function() {
+questionPrototype["onSelectedElementChanged"] = function() {
   if (getSurvey(this) == null) return;
   this.koIsSelected(getSurvey(this)["selectedElementValue"] == this);
 };

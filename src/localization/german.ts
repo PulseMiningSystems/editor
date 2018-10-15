@@ -52,6 +52,10 @@ var germanTranslation = {
     correctJSON: "Bitte JSON korrigieren.",
     surveyResults: "Umfrageergebnis: "
   },
+  //Property names in table headers
+  pel: {
+    isRequired: "Erforderlich?"
+  },
   //Property Editors
   pe: {
     apply: "Anwenden",
@@ -73,7 +77,6 @@ var germanTranslation = {
     propertyIsEmpty: "Bitte geben Sie einen Wert ein",
     value: "Wert",
     text: "Text",
-    required: "Erforderlich?",
     columnEdit: "Spalte bearbeiten: {0}",
     itemEdit: "Element bearbeiten: {0}",
 
@@ -130,36 +133,12 @@ var germanTranslation = {
     triggerRunIf: "Ausführen wenn",
     triggerSetToName: "Ändere Wert von: ",
     triggerSetValue: "auf: ",
-    triggerIsVariable: "Variable nicht im Umfrageergebnis einbinden.",
-    verbChangeType: "Typ ändern ",
-    verbChangePage: "Seite ändern "
+    triggerIsVariable: "Variable nicht im Umfrageergebnis einbinden."
   },
   //Property values
   pv: {
     true: "true",
-    false: "false",
-
-    ar: "العربية",
-    cz: "čeština",
-    da: "dansk",
-    de: "deutsch",
-    en: "english",
-    es: "español",
-    fi: "suomalainen",
-    fr: "français",
-    gr: "ελληνικά",
-    hu: "magyar",
-    it: "italiano",
-    is: "íslenska",
-    lv: "latviešu",
-    nl: "hollandsk",
-    pl: "polski",
-    pt: "português",
-    ro: "română",
-    ru: "русский",
-    sv: "svenska",
-    tr: "türkçe",
-    "zh-cn": "简体中文"
+    false: "false"
   },
   //Operators
   op: {

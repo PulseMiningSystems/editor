@@ -1,17 +1,23 @@
 import * as Survey from "survey-knockout";
 
 export interface ISurveyQuestionEditorDefinition {
+  title?: string;
   properties?: Array<
     string | { name: string; category?: string; tab?: string }
   >;
-  tabs?: Array<{ name: string; index?: number; title?: string }>;
+  tabs?: Array<{
+    name: string;
+    index?: number;
+    title?: string;
+    visible?: boolean;
+  }>;
 }
 
 export class SurveyQuestionEditorDefinition {
   public static definition: {
     [key: string]: ISurveyQuestionEditorDefinition;
   } = {
-    questionbase: {
+    question: {
       properties: [
         "name",
         "title",
@@ -19,7 +25,10 @@ export class SurveyQuestionEditorDefinition {
         { name: "isRequired", category: "checks" },
         { name: "startWithNewLine", category: "checks" }
       ],
-      tabs: [{ name: "visibleIf", index: 100 }]
+      tabs: [
+        { name: "visibleIf", index: 100 },
+        { name: "enableIf", index: 110 }
+      ]
     },
     comment: {
       properties: ["rows", "placeHolder"]
@@ -37,7 +46,7 @@ export class SurveyQuestionEditorDefinition {
       tabs: [{ name: "html", index: 10 }]
     },
     matrixdropdownbase: {
-      properties: ["cellType"],
+      properties: ["cellType", "columnsLocation"],
       tabs: [
         { name: "columns", index: 10 },
         { name: "rows", index: 11 },
@@ -45,7 +54,7 @@ export class SurveyQuestionEditorDefinition {
       ]
     },
     matrixdynamic: {
-      properties: ["rowCount", "addRowText", "removeRowText"]
+      properties: ["rowCount", "addRowLocation", "addRowText", "removeRowText"]
     },
     matrix: {
       tabs: [{ name: "columns", index: 10 }, { name: "rows", index: 11 }]
@@ -70,6 +79,29 @@ export class SurveyQuestionEditorDefinition {
         { name: "choicesByUrl", index: 11 }
       ]
     },
+    "itemvalues@choices": {
+      title: "Rules",
+      tabs: [
+        { name: "general", visible: false },
+        { name: "visibleIf", visible: true }
+      ]
+    },
+    "itemvalues@rows": {
+      title: "Rules",
+      tabs: [
+        { name: "general", visible: false },
+        { name: "visibleIf", visible: true }
+      ]
+    },
+    "itemvalues@columns": {
+      title: "Rules",
+      tabs: [
+        { name: "general", visible: false },
+        { name: "visibleIf", visible: true }
+      ]
+    },
+    checkbox: {},
+    radiogroup: {},
     dropdown: {
       properties: ["optionsCaption"]
     },
@@ -81,6 +113,16 @@ export class SurveyQuestionEditorDefinition {
     },
     expression: {
       tabs: [{ name: "expression", index: 10 }]
+    },
+    matrixdropdowncolumn: {
+      properties: ["isRequired", "cellType", "name", "title"]
+    },
+    "matrixdropdowncolumn@default": {
+      tabs: [
+        { name: "general", visible: false },
+        { name: "visibleIf", index: 12 },
+        { name: "enableIf", index: 20 }
+      ]
     },
     "matrixdropdowncolumn@checkbox": {
       properties: ["hasOther", "otherText", "choicesOrder", "colCount"],
@@ -110,7 +152,7 @@ export class SurveyQuestionEditorDefinition {
       ]
     },
     "matrixdropdowncolumn@text": {
-      properties: ["inputType", "placeHolder"],
+      properties: ["inputType", "placeHolder", "maxLength"],
       tabs: [
         { name: "validators", index: 10 },
         { name: "visibleIf", index: 12 },
@@ -118,7 +160,7 @@ export class SurveyQuestionEditorDefinition {
       ]
     },
     "matrixdropdowncolumn@comment": {
-      properties: ["placeHolder"],
+      properties: ["rows", "placeHolder", "maxLength"],
       tabs: [
         { name: "validators", index: 10 },
         { name: "visibleIf", index: 12 },
@@ -134,7 +176,7 @@ export class SurveyQuestionEditorDefinition {
       tabs: [{ name: "expression", index: 10 }]
     },
     multipletextitem: {
-      properties: ["inputType", "placeHolder"],
+      properties: ["inputType", "maxLength", "placeHolder"],
       tabs: [{ name: "validators", index: 10 }]
     },
     paneldynamic: {
@@ -236,8 +278,7 @@ export class SurveyQuestionEditorDefinition {
     }
     return properties;
   }
-  public static getTabs(className: string): Array<any> {
-    var tabs = [];
+  public static isGeneralTabVisible(className: string): boolean {
     var allDefinitions = SurveyQuestionEditorDefinition.getAllDefinitionsByClass(
       className
     );
@@ -245,7 +286,29 @@ export class SurveyQuestionEditorDefinition {
       var def = allDefinitions[i];
       if (def.tabs) {
         for (var j = 0; j < def.tabs.length; j++) {
-          tabs.push(def.tabs[j]);
+          var tab = def.tabs[j];
+          if (tab.name == "general") return tab.visible !== false;
+        }
+      }
+    }
+    return true;
+  }
+  public static getTabs(className: string): Array<any> {
+    var tabs = [];
+    var allDefinitions = SurveyQuestionEditorDefinition.getAllDefinitionsByClass(
+      className
+    );
+    var tabsNamesHash = {};
+    for (var i = 0; i < allDefinitions.length; i++) {
+      var def = allDefinitions[i];
+      if (def.tabs) {
+        for (var j = 0; j < def.tabs.length; j++) {
+          var tab = def.tabs[j];
+          if (tabsNamesHash[tab.name]) continue;
+          tabsNamesHash[tab.name] = true;
+          if (tab.visible !== false) {
+            tabs.push(tab);
+          }
         }
       }
     }
@@ -266,9 +329,9 @@ export class SurveyQuestionEditorDefinition {
       return result;
     }
     while (className) {
-      var metaClass = <Survey.JsonMetadataClass>Survey.JsonObject.metaData[
-        "findClass"
-      ](className);
+      var metaClass = <Survey.JsonMetadataClass>(
+        Survey.JsonObject.metaData["findClass"](className)
+      );
       if (!metaClass) break;
       if (SurveyQuestionEditorDefinition.definition[metaClass.name]) {
         result.push(SurveyQuestionEditorDefinition.definition[metaClass.name]);

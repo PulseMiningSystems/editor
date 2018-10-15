@@ -26,6 +26,10 @@ export interface IQuestionToolboxItem {
    * True, if an end user added this item into Toolbox from the survey
    */
   isCopied: boolean;
+  /**
+   * Toolbox item category. If it is empty, it goes to 'General' category.
+   */
+  category: string;
 }
 
 /**
@@ -39,9 +43,39 @@ export class QuestionToolbox {
     "dropdown",
     "comment",
     "rating",
+    "imagepicker",
     "boolean",
     "html"
   ];
+
+  private _questionDefaultSettings = {
+    imagepicker: () => {
+      return {
+        choices: [
+          {
+            value: "lion",
+            imageLink:
+              "https://surveyjs.io/Content/Images/examples/image-picker/lion.jpg"
+          },
+          {
+            value: "giraffe",
+            imageLink:
+              "https://surveyjs.io/Content/Images/examples/image-picker/giraffe.jpg"
+          },
+          {
+            value: "panda",
+            imageLink:
+              "https://surveyjs.io/Content/Images/examples/image-picker/panda.jpg"
+          },
+          {
+            value: "camel",
+            imageLink:
+              "https://surveyjs.io/Content/Images/examples/image-picker/camel.jpg"
+          }
+        ]
+      };
+    }
+  };
 
   /**
    * Modify this array to change the toolbox items order.
@@ -57,12 +91,23 @@ export class QuestionToolbox {
    * The maximum number of copied toolbox items. If an user adding copiedItemMaxCount + 1 item, the first added item will be removed.
    */
   public copiedItemMaxCount: number = 3;
+  private allowExpandMultipleCategoriesValue: boolean = false;
   private itemsValue: Array<IQuestionToolboxItem> = [];
 
   koItems = ko.observableArray();
+  koCategories = ko.observableArray();
+  koActiveCategory = ko.observable("");
+  koHasCategories = ko.observable(false);
 
   constructor(private supportedQuestions: Array<string> = null) {
     this.createDefaultItems(supportedQuestions);
+    var self = this;
+    this.koActiveCategory.subscribe(function(newValue) {
+      for (var i = 0; i < self.koCategories().length; i++) {
+        var category = self.koCategories()[i];
+        (<any>category).koCollapsed((<any>category).name !== newValue);
+      }
+    });
   }
   /**
    * The Array of Toolbox items as Text JSON.
@@ -124,14 +169,19 @@ export class QuestionToolbox {
   /**
    * Add a copied Question into Toolbox
    * @param question a copied Survey.Question
+   * @param options a json object that allows you to override question properties. Attributes are: name, title, isCopied, iconName, json and category.
    */
-  public addCopiedItem(question: Survey.QuestionBase) {
+  public addCopiedItem(question: Survey.Question, options: any = null) {
+    if (!options) options = {};
+    var name = !!options.name ? options.name : question.name;
+    var title = !!options.title ? options.title : name;
     var item = {
-      name: question.name,
-      title: question.name,
-      isCopied: true,
-      iconName: "icon-default",
-      json: this.getQuestionJSON(question)
+      name: name,
+      title: title,
+      isCopied: options.isCopied !== false,
+      iconName: !!options.iconName ? options.iconName : "icon-default",
+      json: !!options.json ? options.json : this.getQuestionJSON(question),
+      category: !!options.category ? options.category : ""
     };
     if (this.replaceItem(item)) return;
     var copied = this.copiedItems;
@@ -188,8 +238,170 @@ export class QuestionToolbox {
       this.removeItem(removedItems[i].name);
     }
   }
+  /**
+   * Returns toolbox item by its name. Returns null if there is no toolbox item with this name
+   * @param name
+   */
+  public getItemByName(name: string): IQuestionToolboxItem {
+    var index = this.indexOf(name);
+    return index > -1 ? this.itemsValue[index] : null;
+  }
+  /**
+   * Set it to true, to allow end-user to expand more than one category. There will no active category in this case
+   * @see activeCategory
+   */
+  public get allowExpandMultipleCategories(): boolean {
+    return this.allowExpandMultipleCategoriesValue;
+  }
+  public set allowExpandMultipleCategories(val: boolean) {
+    this.allowExpandMultipleCategoriesValue = val;
+    if (val) {
+      this.activeCategory = "";
+    } else {
+      if (this.koCategories().length > 0) {
+        this.activeCategory = (<any>this.koCategories()[0]).name;
+      }
+    }
+  }
+
+  /**
+   * Change the category of the toolbox item
+   * @param name the toolbox item name
+   * @param category new category name
+   */
+  public changeCategory(name: string, category: string) {
+    this.changeCategories([{ name: name, category: category }]);
+  }
+  /**
+   * Change categories for several toolbox items.
+   * @param changedItems the array of objects {name: "your toolbox item name", category: "new category name"}
+   */
+  public changeCategories(changedItems: Array<any>) {
+    for (var i = 0; i < changedItems.length; i++) {
+      var item = changedItems[i];
+      var toolboxItem = this.getItemByName(item.name);
+      if (toolboxItem) {
+        toolboxItem.category = item.category;
+      }
+    }
+    this.onItemsChanged();
+  }
+  /**
+   * Set and get and active category. This property doesn't work if allowExpandMultipleCategories is true. Its default value is empty.
+   * @see allowExpandMultipleCategories
+   * @see expandCategory
+   * @see collapseCategory
+   */
+  public get activeCategory(): string {
+    return this.koActiveCategory();
+  }
+  public set activeCategory(val: string) {
+    this.koActiveCategory(val);
+  }
+  private doCategoryClick(categoryName: string) {
+    if (this.allowExpandMultipleCategories) {
+      var category = this.getCategoryByName(categoryName);
+      if (category) {
+        category.koCollapsed(!category.koCollapsed());
+      }
+    } else {
+      this.activeCategory = categoryName;
+    }
+  }
+  /**
+   * Expand a category by its name. If allowExpandMultipleCategories is false (default value), all other categories become collapsed
+   * @param categoryName the category name
+   * @see allowExpandMultipleCategories
+   * @see collapseCategory
+   */
+  public expandCategory(categoryName: string) {
+    if (this.allowExpandMultipleCategories) {
+      var category = this.getCategoryByName(categoryName);
+      if (category) {
+        category.koCollapsed(false);
+      }
+    } else {
+      this.activeCategory = categoryName;
+    }
+  }
+  /**
+   * Collapse a category by its name. If allowExpandMultipleCategories is false (default value) this function does nothing
+   * @param categoryName the category name
+   * @see allowExpandMultipleCategories
+   */
+  public collapseCategory(categoryName: string) {
+    if (!this.allowExpandMultipleCategories) return;
+    var category = this.getCategoryByName(categoryName);
+    if (category) {
+      category.koCollapsed(true);
+    }
+  }
+  /**
+   * Expand all categories. If allowExpandMultipleCategories is false (default value) this function does nothing
+   * @see allowExpandMultipleCategories
+   */
+  public expandAllCategories() {
+    this.expandCollapseAllCategories(false);
+  }
+  /**
+   * Collapse all categories. If allowExpandMultipleCategories is false (default value) this function does nothing
+   * @see allowExpandMultipleCategories
+   */
+  public collapseAllCategories() {
+    this.expandCollapseAllCategories(true);
+  }
+  private expandCollapseAllCategories(isCollapsed: boolean) {
+    var categories = this.koCategories();
+    for (var i = 0; i < categories.length; i++) {
+      (<any>categories[i]).koCollapsed(isCollapsed);
+    }
+  }
+  private getCategoryByName(categoryName: string): any {
+    var categories = this.koCategories();
+    for (var i = 0; i < categories.length; i++) {
+      var category = <any>categories[i];
+      if (category.name === categoryName) return category;
+    }
+    return null;
+  }
   protected onItemsChanged() {
     this.koItems(this.itemsValue);
+    var categories = [];
+    var categoriesHash = {};
+    var prevActiveCategory = this.koActiveCategory();
+    var self = this;
+    for (var i = 0; i < this.itemsValue.length; i++) {
+      var item = this.itemsValue[i];
+      var categoryName = item.category
+        ? item.category
+        : editorLocalization.getString("ed.toolboxGeneralCategory"); //TODO
+      if (!categoriesHash[categoryName]) {
+        var category = {
+          name: categoryName,
+          items: [],
+          koCollapsed: ko.observable(categoryName !== prevActiveCategory),
+          expand: function() {
+            self.doCategoryClick(this.name);
+          }
+        };
+        categoriesHash[categoryName] = category;
+        categories.push(category);
+      }
+      categoriesHash[categoryName].items.push(item);
+    }
+    this.koCategories(categories);
+    if (!this.allowExpandMultipleCategories) {
+      if (prevActiveCategory && categoriesHash[prevActiveCategory]) {
+        this.koActiveCategory(prevActiveCategory);
+      } else {
+        this.koActiveCategory(categories.length > 0 ? categories[0].name : "");
+      }
+    } else {
+      if (categories.length > 0) {
+        categories[0].koCollapsed(false);
+      }
+    }
+    this.koHasCategories(categories.length > 1);
   }
   private indexOf(name: string) {
     for (var i = 0; i < this.itemsValue.length; i++) {
@@ -222,7 +434,8 @@ export class QuestionToolbox {
         iconName: "icon-" + name,
         title: editorLocalization.getString("qt." + name),
         json: json,
-        isCopied: false
+        isCopied: false,
+        category: ""
       };
       this.itemsValue.push(item);
     }
@@ -250,7 +463,8 @@ export class QuestionToolbox {
         iconName: iconName,
         title: title,
         json: json,
-        isCopied: false
+        isCopied: false,
+        category: ""
       };
       this.itemsValue.push(item);
     }
@@ -258,6 +472,12 @@ export class QuestionToolbox {
   private getQuestionJSON(question: any): any {
     var json = new Survey.JsonObject().toJsonObject(question);
     json.type = question.getType();
+    if (!!this._questionDefaultSettings[json.type]) {
+      var defaultSettings = this._questionDefaultSettings[json.type]();
+      for (var key in defaultSettings) {
+        json[key] = defaultSettings[key];
+      }
+    }
     return json;
   }
   private getQuestionTypes(supportedQuestions: Array<string>): string[] {

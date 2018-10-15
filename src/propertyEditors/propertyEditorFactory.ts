@@ -10,6 +10,29 @@ export class SurveyPropertyEditorFactory {
   private static creatorList = {};
   private static creatorByClassList = {};
   private static widgetRegisterList = {};
+  public static getOperators(): Array<any> {
+    var operators = [
+      "empty",
+      "notempty",
+      "equal",
+      "notequal",
+      "contains",
+      "notcontains",
+      "greater",
+      "less",
+      "greaterorequal",
+      "lessorequal"
+    ];
+    var result = [];
+    for (var i = 0; i < operators.length; i++) {
+      var name = operators[i];
+      result.push({
+        name: name,
+        text: editorLocalization.getString("op." + name)
+      });
+    }
+    return result;
+  }
   public static registerEditor(
     name: string,
     creator: (property: Survey.JsonObjectProperty) => SurveyPropertyEditorBase,
@@ -82,14 +105,31 @@ export class SurveyStringPropertyEditor extends SurveyPropertyEditorBase {
 }
 export class SurveyDropdownPropertyEditor extends SurveyPropertyEditorBase {
   public koChoices: any;
+  public koHasFocus: any;
   constructor(property: Survey.JsonObjectProperty) {
     super(property);
     this.koChoices = ko.observableArray(this.getLocalizableChoices());
+    this.koHasFocus = ko.observable(false);
+    var self = this;
+    this.koHasFocus.subscribe(function(newValue) {
+      if (newValue && self.property["isDynamicChoices"]) {
+        //TODO
+        self.koChoices(self.getLocalizableChoices());
+      }
+    });
   }
   public get editorType(): string {
     return "dropdown";
   }
   public getValueText(value: any): string {
+    if (this.property.name === "locale") {
+      let text = editorLocalization.getLocaleName(value);
+      if (text) return text;
+    }
+    if (this.property.name === "cellType") {
+      let text = editorLocalization.getString("qt." + value);
+      if (text) return text;
+    }
     return editorLocalization.getPropertyValue(value);
   }
   public setObject(value: any) {
@@ -107,7 +147,7 @@ export class SurveyDropdownPropertyEditor extends SurveyPropertyEditorBase {
     Survey.ItemValue.setData(res, choices);
     for (var i = 0; i < res.length; i++) {
       var value = res[i].value;
-      var text = editorLocalization.getPropertyValue(value);
+      var text = this.getValueText(value);
       if (text != value) {
         res[i].text = text;
       }

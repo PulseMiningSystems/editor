@@ -8,20 +8,25 @@ var rimraf = require("rimraf");
 var GenerateJsonPlugin = require("generate-json-webpack-plugin");
 var packageJson = require("./package.json");
 var fs = require("fs");
+var replace = require("replace-in-file");
+var svgStoreUtils = require(path.resolve(
+  __dirname,
+  "./node_modules/webpack-svgstore-plugin/src/helpers/utils.js"
+));
 
 var banner = [
-  "surveyjs Editor v" + packageJson.version,
+  "surveyjs Builder(Editor) v" + packageJson.version,
   "(c) Devsoft Baltic O� - http://surveyjs.io/",
-  "Github - https://github.com/surveyjs/editor",
-  "License: (http://editor.surveyjs.io/license.html)"
+  "Github: https://github.com/surveyjs/editor",
+  "License: https://surveyjs.io/Licenses#BuildSurvey"
 ].join("\n");
 
 var dts_banner = [
-  "Type definitions for Surveyjs Editor JavaScript library v" +
+  "Type definitions for Surveyjs Builder(Editor) JavaScript library v" +
     packageJson.version,
   "(c) Devsoft Baltic O� - http://surveyjs.io/",
-  "Github - https://github.com/surveyjs/editor",
-  "License: (http://editor.surveyjs.io/license.html)",
+  "Github: https://github.com/surveyjs/editor",
+  "License: https://surveyjs.io/Licenses#BuildSurvey",
   ""
 ].join("\n");
 
@@ -29,12 +34,13 @@ var packagePlatformJson = {
   name: "surveyjs-editor",
   version: packageJson.version,
   description:
-    "Use surveyjs Editor to create or edit JSON for surveyjs library.",
-  keywords: ["Survey", "JavaScript", "Editor", "surveyjs"],
-  homepage: "http://editor.surveyjs.io",
-  license: "http://editor.surveyjs.io/license.html",
+    "Use surveyjs Builder(Editor) to create or edit JSON for surveyjs library.",
+  keywords: ["Survey", "JavaScript", "Editor", "Builder", "surveyjs"],
+  homepage: "https://surveyjs.io/Builder",
+  license: "https://surveyjs.io/Licenses#BuildSurvey",
   files: [
     "surveyeditor.css",
+    "surveyeditor.min.css",
     "surveyeditor.js",
     "surveyeditor.d.ts",
     "surveyeditor.min.js"
@@ -48,11 +54,14 @@ var packagePlatformJson = {
     node: ">=0.10.0"
   },
   typings: "surveyeditor.d.ts",
+  peerDependencies: {
+    bootstrap: "^3.3.6",
+    jquery: "^3.1.1",
+    "ace-builds": "^1.2.2"
+  },
   dependencies: {
     "survey-knockout": "^" + packageJson.version,
     knockout: "^3.4.0",
-    bootstrap: "^3.3.6",
-    "ace-builds": "^1.2.2",
     "@types/knockout": "^3.4.0"
   },
   devDependencies: {}
@@ -61,12 +70,37 @@ var packagePlatformJson = {
 module.exports = function(options) {
   var packagePath = "./package/";
   var extractCSS = new ExtractTextPlugin({
-    filename: packagePath + "surveyeditor.css"
+    filename:
+      packagePath +
+      (options.buildType === "prod"
+        ? "surveyeditor.min.css"
+        : "surveyeditor.css")
   });
+
+  function createSVGBundle() {
+    var options = {
+      fileName: path.resolve(__dirname, "./src/svgbundle.html"),
+      template: path.resolve(__dirname, "./svgbundle.pug"),
+      svgoOptions: {
+        plugins: [{ removeTitle: true }]
+      },
+      prefix: "icon-"
+    };
+
+    svgStoreUtils.filesMap(path.join("./src/images/**/*.svg"), files => {
+      const fileContent = svgStoreUtils.createSprite(
+        svgStoreUtils.parseFiles(files, options),
+        options.template
+      );
+
+      fs.writeFileSync(options.fileName, fileContent);
+    });
+  }
 
   var percentage_handler = function handler(percentage, msg) {
     if (0 == percentage) {
       console.log("Build started... good luck!");
+      createSVGBundle();
     } else if (1 == percentage) {
       if (options.buildType === "prod") {
         dts.bundle({
@@ -75,10 +109,26 @@ module.exports = function(options) {
           outputAsModuleFolder: true,
           headerText: dts_banner
         });
+
+        replace(
+          {
+            files: packagePath + "surveyeditor.d.ts",
+            from: /export let\s+\w+:\s+\w+;/,
+            to: ""
+          },
+          (error, changes) => {
+            if (error) {
+              return console.error("Error occurred:", error);
+            }
+            console.log("check me :     " + packagePath + "surveyeditor.d.ts");
+            console.log("Modified files:", changes.join(", "));
+          }
+        );
+
         rimraf.sync(packagePath + "typings");
-        fs
-          .createReadStream("./npmREADME.md")
-          .pipe(fs.createWriteStream(packagePath + "README.md"));
+        fs.createReadStream("./npmREADME.md").pipe(
+          fs.createWriteStream(packagePath + "README.md")
+        );
       }
     }
   };
@@ -109,7 +159,17 @@ module.exports = function(options) {
           test: /\.scss$/,
           loader: extractCSS.extract({
             fallbackLoader: "style-loader",
-            loader: "css-loader!sass-loader"
+            use: [
+              {
+                loader: "css-loader",
+                options: {
+                  minimize: options.buildType === "prod"
+                }
+              },
+              {
+                loader: "sass-loader" 
+              }
+            ]
           })
         },
         {
@@ -150,10 +210,14 @@ module.exports = function(options) {
       }
     },
     plugins: [
+      new webpack.WatchIgnorePlugin([/svgbundle\.html/]),
       new webpack.ProgressPlugin(percentage_handler),
       new webpack.DefinePlugin({
         "process.env.ENVIRONMENT": JSON.stringify(options.buildType),
         "process.env.VERSION": JSON.stringify(packageJson.version)
+      }),
+      new webpack.BannerPlugin({
+        banner: banner
       }),
       extractCSS
     ],
@@ -164,7 +228,6 @@ module.exports = function(options) {
     config.devtool = false;
     config.plugins = config.plugins.concat([
       new webpack.optimize.UglifyJsPlugin(),
-      new webpack.BannerPlugin(banner),
       new GenerateJsonPlugin(
         packagePath + "package.json",
         packagePlatformJson,

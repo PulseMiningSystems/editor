@@ -1,6 +1,9 @@
 ﻿var webpack = require("webpack");
+var ExtractTextPlugin = require("extract-text-webpack-plugin");
 var webpackConfigCreator = require("./webpack.config");
 var webpackConfig = webpackConfigCreator({ buildType: "dev" });
+
+process.env.CHROME_BIN = require("puppeteer").executablePath();
 
 module.exports = function(config) {
   config.set({
@@ -26,11 +29,14 @@ module.exports = function(config) {
         new webpack.SourceMapDevToolPlugin({
           filename: null, // if no value is provided the sourcemap is inlined
           test: /\.(ts|js)($|\?)/i // process .js and .ts files only
+        }),
+        new ExtractTextPlugin({
+          filename: "./package/surveyeditor.css"
         })
       ]
     },
     reporters: ["progress", "dots", "junit"],
-    browsers: ["PhantomJS"],
+    browsers: ["ChromeHeadless"],
     colors: true,
     // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
     logLevel: config.LOG_WARN,

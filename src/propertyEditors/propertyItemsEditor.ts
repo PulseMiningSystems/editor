@@ -1,13 +1,12 @@
 import * as ko from "knockout";
 import * as Survey from "survey-knockout";
+import Sortable from "sortablejs";
 import { SurveyPropertyModalEditor } from "./propertyModalEditor";
 import { editorLocalization } from "../editorLocalization";
 
 export class SurveyPropertyItemsEditor extends SurveyPropertyModalEditor {
   public koItems: any;
   public onDeleteClick: any;
-  public onMoveUpClick: any;
-  public onMoveDownClick: any;
   public onAddClick: any;
   public onClearClick: any;
   koAllowAddRemoveItems: any;
@@ -27,12 +26,6 @@ export class SurveyPropertyItemsEditor extends SurveyPropertyModalEditor {
     self.onAddClick = function() {
       self.AddItem();
     };
-    self.onMoveUpClick = function(item) {
-      self.moveUp(item);
-    };
-    self.onMoveDownClick = function(item) {
-      self.moveDown(item);
-    };
   }
   public getValueText(value: any): string {
     var len = value ? value.length : 0;
@@ -48,37 +41,25 @@ export class SurveyPropertyItemsEditor extends SurveyPropertyModalEditor {
   protected onSetEditorOptions(editorOptions: any) {
     this.koAllowAddRemoveItems(editorOptions.allowAddRemoveItems);
   }
-
+  public sortableOptions = {
+    handle: ".svd-drag-handle",
+    animation: 150
+  };
   protected AddItem() {
     this.koItems.push(this.createNewEditorItem());
   }
-  protected moveUp(item: any) {
-    var arr = this.koItems();
-    var index = arr.indexOf(item);
-    if (index < 1) return;
-    arr[index] = arr[index - 1];
-    arr[index - 1] = item;
-    this.koItems(arr);
-  }
-  protected moveDown(item: any) {
-    var arr = this.koItems();
-    var index = arr.indexOf(item);
-    if (index < 0 || index >= arr.length - 1) return;
-    arr[index] = arr[index + 1];
-    arr[index + 1] = item;
-    this.koItems(arr);
-  }
+
   protected setupItems() {
-    this.koItems(this.getItemsFromValue());
+    this.koItems(this.getItemsFromValue(this.editingValue));
   }
   protected onValueChanged() {
     if (this.isShowingModal) {
       this.setupItems();
     }
   }
-  public beforeShowModal() {
-    super.beforeShowModal();
-    this.setupItems();
+  public setup() {
+    super.setup();
+    this.updateValue();
   }
   protected getItemsFromValue(value: any = null): Array<any> {
     var items = [];
@@ -87,6 +68,9 @@ export class SurveyPropertyItemsEditor extends SurveyPropertyModalEditor {
       items.push(this.createEditorItem(value[i]));
     }
     return items;
+  }
+  protected get isCurrentValueEmpty() {
+    return this.koItems().length == 0;
   }
   protected onBeforeApply() {
     var items = [];

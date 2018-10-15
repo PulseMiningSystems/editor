@@ -1,15 +1,18 @@
 import * as ko from "knockout";
 import * as Survey from "survey-knockout";
-import { SurveyPropertyItemsEditor } from "./propertyItemsEditor";
-import { SurveyPropertyEditorBase } from "./propertyEditorBase";
+import {
+  SurveyPropertyEditorBase,
+  ISurveyObjectEditorOptions
+} from "./propertyEditorBase";
 import { SurveyQuestionEditor } from "../questionEditors/questionEditor";
-import { SurveyPropertyItemValuesEditor } from "./propertyItemValuesEditor";
 import { editorLocalization } from "../editorLocalization";
 import {
   SurveyNestedPropertyEditor,
-  SurveyNestedPropertyEditorItem
+  SurveyNestedPropertyEditorItem,
+  SurveyNestedPropertyEditorColumn
 } from "./propertyNestedPropertyEditor";
 import { SurveyPropertyEditorFactory } from "./propertyEditorFactory";
+import { SurveyQuestionEditorDefinition } from "../questionEditors/questionEditorDefinition";
 
 export class SurveyPropertyDropdownColumnsEditor extends SurveyNestedPropertyEditor {
   constructor(property: Survey.JsonObjectProperty) {
@@ -18,86 +21,90 @@ export class SurveyPropertyDropdownColumnsEditor extends SurveyNestedPropertyEdi
   public get editorType(): string {
     return "matrixdropdowncolumns";
   }
+  protected getEditorName(): string {
+    if (!this.koEditItem()) return "";
+    return editorLocalization
+      .getString("pe.columnEdit")
+      ["format"](this.koEditItem().column.name);
+  }
   protected createNewEditorItem(): any {
-    var newColumn = new Survey.MatrixDropdownColumn("");
-    if (this.options) {
-      this.options.onMatrixDropdownColumnAddedCallback(newColumn);
+    var newColumn = this.createEditorItemCore(null);
+    var columns = [];
+    for (var i = 0; i < this.koItems().length; i++) {
+      columns.push(this.koItems()[i].column);
     }
-    //newColumn.colOwner = TODO set colOwner.
-    return new SurveyPropertyMatrixDropdownColumnsItem(newColumn, this.options);
+    columns.push(newColumn);
+    if (this.options) {
+      this.options.onMatrixDropdownColumnAddedCallback(
+        this.object,
+        newColumn,
+        columns
+      );
+    }
+    return new SurveyPropertyMatrixDropdownColumnsItem(
+      newColumn,
+      () => this.columns,
+      this.options
+    );
   }
   protected createEditorItem(item: any) {
-    return new SurveyPropertyMatrixDropdownColumnsItem(item, this.options);
+    var newColumn = this.createEditorItemCore(item);
+    return new SurveyPropertyMatrixDropdownColumnsItem(
+      newColumn,
+      () => this.columns,
+      this.options
+    );
   }
   protected createItemFromEditorItem(editorItem: any) {
-    return editorItem.column;
+    var newColumn = new Survey.MatrixDropdownColumn("");
+    var json = new Survey.JsonObject().toJsonObject(editorItem.column);
+    new Survey.JsonObject().toObject(json, newColumn);
+    return newColumn;
+  }
+  protected createEditorItemCore(item: any): Survey.MatrixDropdownColumn {
+    var newColumn = new Survey.MatrixDropdownColumn("");
+    newColumn["object"] = this.object;
+    newColumn.colOwner = this.object;
+    if (item) {
+      var json = new Survey.JsonObject().toJsonObject(item);
+      new Survey.JsonObject().toObject(json, newColumn);
+    }
+    return newColumn;
+  }
+  protected getProperties(): Array<Survey.JsonObjectProperty> {
+    var names = this.getPropertiesNames("matrixdropdowncolumn", [
+      "isRequired",
+      "cellType",
+      "name",
+      "title"
+    ]);
+    return this.getPropertiesByNames("matrixdropdowncolumn", names);
   }
 }
 
 export class SurveyPropertyMatrixDropdownColumnsItem extends SurveyNestedPropertyEditorItem {
-  koName: any;
-  koTitle: any;
-  koCellType: any;
-  koIsRequired: any;
-  koEditorName: any;
-  koHasError: any;
-  koCanEdit: any;
-  public onShowChoicesClick: any;
-  public cellTypeChoices: Array<any>;
   constructor(
     public column: Survey.MatrixDropdownColumn,
-    public options = null
+    getColumns: () => Array<SurveyNestedPropertyEditorColumn>,
+    options: ISurveyObjectEditorOptions = null
   ) {
-    super();
-    this.cellTypeChoices = this.getPropertyChoices();
-    this.koName = ko.observable(column.name);
-    this.koCellType = ko.observable(column.cellType);
-    this.koTitle = ko.observable(
-      column.name === column.title ? "" : column.title
-    );
-    this.koIsRequired = ko.observable(this.column.isRequired);
-    this.koHasError = ko.observable(false);
-
+    super(column, getColumns, options);
     var self = this;
-    this.koCanEdit = ko.computed(function() {
-      return self.koCellType() != "default";
-    });
-    this.koEditorName = ko.computed(function() {
-      return editorLocalization
-        .getString("pe.columnEdit")
-        ["format"](self.koName());
-    });
-    this.koCellType.subscribe(function(newValue) {
-      self.resetSurveyQuestionEditor();
-    });
+    column.registerFunctionOnPropertyValueChanged(
+      "cellType",
+      function() {
+        self.resetSurveyQuestionEditor();
+      },
+      "colEdit"
+    );
   }
   protected createSurveyQuestionEditor() {
-    this.column.cellType = this.koCellType();
     return new SurveyQuestionEditor(
       this.column,
       null,
-      "matrixdropdowncolumn@" + this.koCellType(),
+      "matrixdropdowncolumn@" + this.column.cellType,
       this.options
     );
-  }
-  public hasError(): boolean {
-    if (super.hasError()) return true;
-    this.koHasError(!this.koName());
-    return this.koHasError();
-  }
-  public apply() {
-    super.apply();
-    this.column.name = this.koName();
-    this.column.title = this.koTitle();
-    this.column.cellType = this.koCellType();
-    this.column.isRequired = this.koIsRequired();
-  }
-  private getPropertyChoices(): Array<any> {
-    var property = Survey.JsonObject.metaData.findProperty(
-      "matrixdropdowncolumn",
-      "cellType"
-    );
-    return property ? property.choices : [];
   }
 }
 

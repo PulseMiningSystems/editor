@@ -2,9 +2,10 @@ import * as ko from "knockout";
 import * as Survey from "survey-knockout";
 import { SurveyPropertyEditorBase } from "./propertyEditorBase";
 import { SurveyPropertyEditorFactory } from "./propertyEditorFactory";
+import { SurveyPropertyConditionEditor } from "./propertyConditionEditor";
 import { editorLocalization } from "../editorLocalization";
+import { focusFirstControl } from "../utils/utils";
 import RModal from "rmodal";
-import insertAtCursor from "../utils/insertAtCursor";
 
 export class SurveyPropertyModalEditorCustomWidget {
   private static customWidgetId = 1;
@@ -51,6 +52,7 @@ export class SurveyPropertyModalEditor extends SurveyPropertyEditorBase {
     return SurveyPropertyModalEditor.customWidgets[editorType];
   }
   private isShowingModalValue: boolean = false;
+  private elements: HTMLElement[];
   public editingObject: any;
   public onApplyClick: any;
   public onOkClick: any;
@@ -93,11 +95,11 @@ export class SurveyPropertyModalEditor extends SurveyPropertyEditorBase {
       if (!self.koHasError()) self.onHideModal();
     };
     self.onResetClick = function() {
-      self.reset();
+      self.updateValue();
       self.onHideModal();
     };
     self.onShowModal = function() {
-      self.beforeShowModal();
+      self.beforeShow();
       var modal = new RModal(document.querySelector(self.modalNameTarget), {
         bodyClass: "",
         closeTimeout: 100,
@@ -118,14 +120,17 @@ export class SurveyPropertyModalEditor extends SurveyPropertyEditorBase {
         self.beforeCloseModal();
         modal.close();
       };
+      if (!!this.elements) {
+        focusFirstControl(this.elements);
+      }
     };
     self.koAfterRender = function(el, con) {
       return self.afterRender(el, con);
     };
   }
   public setup() {
-    this.showDisplayName = false;
-    this.beforeShowModal();
+    super.setup();
+    this.beforeShow();
   }
   public get isModal(): boolean {
     return true;
@@ -133,8 +138,9 @@ export class SurveyPropertyModalEditor extends SurveyPropertyEditorBase {
   public get isShowingModal(): boolean {
     return this.isShowingModalValue;
   }
-  public beforeShowModal() {
+  public beforeShow() {
     this.isShowingModalValue = true;
+    this.updateValue();
   }
   public beforeCloseModal() {
     this.isShowingModalValue = false;
@@ -143,9 +149,6 @@ export class SurveyPropertyModalEditor extends SurveyPropertyEditorBase {
     this.koShowApplyButton = ko.observable(
       !this.options || this.options.showApplyButtonInEditors
     );
-  }
-  private reset() {
-    this.editingValue = this.koValue();
   }
   public setObject(value: any) {
     this.editingObject = value;
@@ -165,16 +168,19 @@ export class SurveyPropertyModalEditor extends SurveyPropertyEditorBase {
     return false;
   }
   protected afterRender(elements, con) {
+    this.elements = elements;
     var customWidget = SurveyPropertyModalEditor.getCustomWidget(
       this.editorType
     );
-    if (!customWidget) return;
-    var el = this.GetFirstNonTextElement(elements);
-    var tEl = elements[0];
-    if (tEl.nodeName == "#text") tEl.data = "";
-    tEl = elements[elements.length - 1];
-    if (tEl.nodeName == "#text") tEl.data = "";
-    customWidget.afterRender(this, el);
+    if (!!customWidget) {
+      var el = this.GetFirstNonTextElement(elements);
+      var tEl = elements[0];
+      if (tEl.nodeName == "#text") tEl.data = "";
+      tEl = elements[elements.length - 1];
+      if (tEl.nodeName == "#text") tEl.data = "";
+      customWidget.afterRender(this, el);
+    }
+    focusFirstControl(elements);
   }
   private GetFirstNonTextElement(elements: any) {
     if (!elements || !elements.length) return;
@@ -192,16 +198,16 @@ export class SurveyPropertyTextEditor extends SurveyPropertyModalEditor {
   constructor(property: Survey.JsonObjectProperty) {
     super(property);
     this.koTextValue = ko.observable();
+    var self = this;
+    this.koTextValue.subscribe(function(newValue) {
+      self.onkoTextValueChanged(newValue);
+    });
   }
   public get editorType(): string {
     return "text";
   }
   public get isEditable(): boolean {
     return true;
-  }
-  public setup() {
-    super.setup();
-    this.showDisplayName = true;
   }
   public getValueText(value: any): string {
     if (!value) return null;
@@ -211,6 +217,7 @@ export class SurveyPropertyTextEditor extends SurveyPropertyModalEditor {
     }
     return str;
   }
+  protected onkoTextValueChanged(newValue) {}
   protected onValueChanged() {
     this.koTextValue(this.editingValue);
   }
@@ -228,28 +235,6 @@ export class SurveyPropertyHtmlEditor extends SurveyPropertyTextEditor {
   }
 }
 
-export class SurveyPropertyConditionEditor extends SurveyPropertyTextEditor {
-  constructor(property: Survey.JsonObjectProperty, private _type: string) {
-    super(property);
-  }
-  public get editorType(): string {
-    return this._type;
-  }
-  public get availableQuestions(): any[] {
-    return (this.object && this.object.survey.getAllQuestions()) || [];
-  }
-  public setup() {
-    super.setup();
-    this.showDisplayName = false;
-  }
-  public insertQuestion(question, element) {
-    var textarea = element.parentNode.parentNode.parentNode.querySelector(
-      "textarea"
-    );
-    insertAtCursor(textarea, "{" + question.name + "}");
-  }
-}
-
 SurveyPropertyEditorFactory.registerEditor("text", function(
   property: Survey.JsonObjectProperty
 ): SurveyPropertyEditorBase {
@@ -259,14 +244,4 @@ SurveyPropertyEditorFactory.registerEditor("html", function(
   property: Survey.JsonObjectProperty
 ): SurveyPropertyEditorBase {
   return new SurveyPropertyHtmlEditor(property);
-});
-SurveyPropertyEditorFactory.registerEditor("condition", function(
-  property: Survey.JsonObjectProperty
-): SurveyPropertyEditorBase {
-  return new SurveyPropertyConditionEditor(property, "condition");
-});
-SurveyPropertyEditorFactory.registerEditor("expression", function(
-  property: Survey.JsonObjectProperty
-): SurveyPropertyEditorBase {
-  return new SurveyPropertyConditionEditor(property, "expression");
 });

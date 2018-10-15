@@ -12,6 +12,34 @@ test(`check d&d`, async t => {
     () => document.querySelectorAll(".svd_container .svd_question ").length
   );
 
-  await t.dragToElement(`[title~=Radiogroup]`, `.svd_container .well`);
+  await t.dragToElement(
+    `[title~=Radiogroup]`,
+    `.svd_container .svd_questions_editor`
+  );
   assert.equal(await getQuestionsAddedCount(), 1);
+});
+
+test(`check drop to the bottom`, async t => {
+  const getQuestionsAddedCount = ClientFunction(
+    () => document.querySelectorAll(".svd_container .svd_question ").length
+  );
+  const checkCheckbox = ClientFunction(
+    () =>
+      document
+        .querySelectorAll(".svd_container .svd_question ")[0]
+        .querySelectorAll(".sv_qcbx ").length === 1
+  );
+
+  await t.dragToElement(
+    `[title~=Checkbox]`,
+    `.svd_container .svd_questions_editor`
+  );
+  assert.equal(await getQuestionsAddedCount(), 1);
+  assert.ok(await checkCheckbox());
+
+  await t.dragToElement(
+    `[title~=Radiogroup]`,
+    `.svd_container .svd_questions_editor`
+  );
+  assert.equal(await getQuestionsAddedCount(), 2);
 });

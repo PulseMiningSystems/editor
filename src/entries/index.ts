@@ -7,6 +7,9 @@ import "../main.scss";
 export let Version: string;
 Version = `${process.env.VERSION}`;
 
+export { enStrings } from "../localization/english";
+export { editorLocalization, defaultStrings } from "../editorLocalization";
+
 export { DragDropHelper } from "../dragdrophelper";
 export {
   SurveyPropertyEditorBase
@@ -47,10 +50,19 @@ export {
   SurveyPropertyModalEditor
 } from "../propertyEditors/propertyModalEditor";
 export {
+  SurveyPropertyTextEditor,
+  SurveyPropertyHtmlEditor
+} from "../propertyEditors/propertyModalEditor";
+export {
+  SurveyPropertyConditionEditor
+} from "../propertyEditors/propertyConditionEditor";
+export {
   SurveyPropertyResultfullEditor
 } from "../propertyEditors/propertyRestfullEditor";
 export {
-  SurveyPropertyDefaultValueEditor
+  SurveyPropertyDefaultValueEditor,
+  SurveyPropertyDefaultRowValueEditor,
+  SurveyPropertyDefaultPanelValueEditor
 } from "../propertyEditors/propertyDefaultValueEditor";
 export {
   SurveyPropertyTriggersEditor
@@ -58,44 +70,79 @@ export {
 export {
   SurveyPropertyValidatorsEditor
 } from "../propertyEditors/propertyValidatorsEditor";
+export {
+  SurveyPropertyCellsEditor
+} from "../propertyEditors/propertyCellsEditor";
 export { SurveyObjects } from "../surveyObjects";
 
-export { editorLocalization, defaultStrings } from "../editorLocalization";
-
 export {
-  SurveyQuestionEditorGeneralProperties,
-  SurveyQuestionEditorGeneralRow,
-  SurveyQuestionEditorGeneralProperty
-} from "../questionEditors/questionEditorGeneralProperties";
+  SurveyQuestionEditorProperties,
+  SurveyQuestionEditorRow,
+  SurveyQuestionEditorProperty
+} from "../questionEditors/questionEditorProperties";
 export {
   SurveyQuestionEditorDefinition
 } from "../questionEditors/questionEditorDefinition";
 export {
   SurveyPropertyEditorShowWindow,
   SurveyQuestionEditor,
-  SurveyQuestionEditorTabGeneral
+  SurveyQuestionEditorTab
 } from "../questionEditors/questionEditor";
 
 export { QuestionToolbox } from "../questionToolbox";
 export { SurveyObjectProperty } from "../objectProperty";
 export { SurveyObjectEditor } from "../objectEditor";
-export { SurveyPagesEditor } from "../pagesEditor";
+export { PagesEditor } from "../pagesEditor";
 export { SurveyTextWorker } from "../textWorker";
 export { ObjType, SurveyHelper } from "../surveyHelper";
 export { SurveyLiveTester } from "../surveylive";
 export { SurveyEmbedingWindow } from "../surveyEmbedingWindow";
 export { QuestionConverter } from "../questionconverter";
 export { SurveyUndoRedo, UndoRedoItem } from "../undoredo";
-export { SurveyForDesigner } from "../surveyjsObjects";
+export {
+  SurveyForDesigner,
+  registerAdorner,
+  removeAdorners
+} from "../surveyjsObjects";
 export { Extentions } from "../extentions";
 export { SurveyEditor } from "../editor";
 
 export { SurveysManager } from "../manage";
 
+export { StylesManager } from "../stylesmanager";
+
 //editorLocalization
 import "../localization/french";
-import "../localization/spanish";
-import "../localization/portuguese";
+import "../localization/german";
 import "../localization/italian";
-import "../localization/simplified-chinese";
+import "../localization/korean";
 import "../localization/persian";
+import "../localization/polish";
+import "../localization/portuguese";
+import "../localization/simplified-chinese";
+import "../localization/spanish";
+import "../localization/traditional-chinese";
+
+export {
+  Translation,
+  TranslationGroup,
+  TranslationItem,
+  TranslationItemBase
+} from "../translation";
+
+//adorners
+export { titleAdorner } from "../adorners/title-editor";
+export { itemAdorner } from "../adorners/item-editor";
+export { labelAdorner } from "../adorners/label-editor";
+export { questionActionsAdorner } from "../adorners/question-actions";
+export { selectItemsEditorAdorner } from "../adorners/select-items-editor";
+export { ratingItemAdorner } from "../adorners/rating-item-editor";
+export { imageItemsAdorner } from "../adorners/image-items";
+
+export {
+  IAccordionItemData,
+  AccordionItemModel,
+  AccordionModel
+} from "../utils/accordion";
+
+export { SplitterComponentViewModel } from "../utils/splitter";

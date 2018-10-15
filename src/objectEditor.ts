@@ -9,6 +9,7 @@ import { SurveyHelper } from "./surveyHelper";
 export class SurveyObjectEditor {
   private selectedObjectValue: any;
   private oldActiveProperty: SurveyObjectProperty = null;
+  koAfterRender: any;
   public koProperties = ko.observableArray<SurveyObjectProperty>();
   public koActiveProperty = ko.observable<SurveyObjectProperty>();
   public koHasObject = ko.observable<boolean>();
@@ -23,6 +24,16 @@ export class SurveyObjectEditor {
     object: any,
     property: Survey.JsonObjectProperty
   ) => boolean;
+  public onSortPropertyCallback: (
+    object: any,
+    property1: Survey.JsonObjectProperty,
+    property2: Survey.JsonObjectProperty
+  ) => number;
+  public onAfterRenderCallback: (
+    object: any,
+    htmlElement: HTMLElement,
+    property: SurveyObjectProperty
+  ) => any;
 
   constructor(public propertyEditorOptions: ISurveyObjectEditorOptions = null) {
     this.koActiveProperty.subscribe(newValue => {
@@ -31,6 +42,10 @@ export class SurveyObjectEditor {
       this.oldActiveProperty = newValue;
       if (newValue) newValue.isActive = true;
     });
+    var self = this;
+    this.koAfterRender = function(el, con) {
+      self.afterRender(el, con);
+    };
   }
 
   public get selectedObject(): any {
@@ -43,7 +58,7 @@ export class SurveyObjectEditor {
     this.updateProperties();
     this.updatePropertiesObject();
   }
-  public getPropertyEditor(name: string) {
+  public getPropertyEditor(name: string): SurveyObjectProperty {
     var properties = this.koProperties();
     for (var i = 0; i < properties.length; i++) {
       if (properties[i].name == name) return properties[i];
@@ -56,6 +71,20 @@ export class SurveyObjectEditor {
   public objectChanged() {
     this.updatePropertiesObject();
   }
+  protected afterRender(elements, prop) {
+    if (
+      !Survey.SurveyElement ||
+      !Survey.SurveyElement.GetFirstNonTextElement ||
+      !this.onAfterRenderCallback
+    )
+      return;
+    var el = Survey.SurveyElement.GetFirstNonTextElement(elements);
+    var tEl = elements[0];
+    if (tEl.nodeName === "#text") tEl.data = "";
+    tEl = elements[elements.length - 1];
+    if (tEl.nodeName === "#text") tEl.data = "";
+    this.onAfterRenderCallback(this.selectedObject, el, prop);
+  }
   protected updateProperties() {
     if (!this.selectedObject || !this.selectedObject.getType) {
       this.koProperties([]);
@@ -65,31 +94,56 @@ export class SurveyObjectEditor {
     var properties = Survey.JsonObject.metaData["getPropertiesByObj"]
       ? Survey.JsonObject.metaData["getPropertiesByObj"](this.selectedObject)
       : Survey.JsonObject.metaData.getProperties(this.selectedObject.getType());
-    properties.sort((a, b) => {
-      if (a.name == b.name) return 0;
-      if (a.name > b.name) return 1;
-      return -1;
-    });
     var objectProperties = [];
     var self = this;
     var propEvent = (property: SurveyObjectProperty, newValue: any) => {
-      self.onPropertyValueChanged.fire(this, {
+      var options = {
         property: property.property,
         object: property.object,
-        newValue: newValue
-      });
+        newValue: newValue,
+        updatedValue: null
+      };
+      self.onPropertyValueChanged.fire(this, options);
+      if (!!options.updatedValue && options.updatedValue != options.newValue) {
+        property.koValue(options.updatedValue);
+      }
     };
+    var visibleProperties = [];
     for (var i = 0; i < properties.length; i++) {
       if (!this.canShowProperty(properties[i])) continue;
+      visibleProperties.push(properties[i]);
+    }
+    var sortEvent = function(
+      a: Survey.JsonObjectProperty,
+      b: Survey.JsonObjectProperty
+    ): number {
+      var res = 0;
+      if (self.onSortPropertyCallback) {
+        res = self.onSortPropertyCallback(self.selectedObject, a, b);
+      }
+      if (res) return res;
+      if (a.name == b.name) return 0;
+      if (a.name > b.name) return 1;
+      return -1;
+    };
+    visibleProperties = visibleProperties.sort(sortEvent);
+    for (var i = 0; i < visibleProperties.length; i++) {
       var objectProperty = new SurveyObjectProperty(
-        properties[i],
+        visibleProperties[i],
         propEvent,
         this.propertyEditorOptions
       );
+      objectProperty.editor.isInplaceProperty = true;
       objectProperties.push(objectProperty);
     }
     this.koProperties(objectProperties);
-    this.koActiveProperty(this.getPropertyEditor("name"));
+    var propEditor = this.getPropertyEditor("name");
+    if (!propEditor && objectProperties.length > 0) {
+      propEditor = this.getPropertyEditor(objectProperties[0].name);
+    }
+    if (propEditor) {
+      this.koActiveProperty(propEditor);
+    }
   }
   protected canShowProperty(property: Survey.JsonObjectProperty): boolean {
     return SurveyHelper.isPropertyVisible(
