@@ -145,6 +145,7 @@ export var enStrings = {
     startWithNewLine: "Is start with new line?",
     rows: "Row count",
     placeHolder: "Input place holder",
+    replace: "Pulse place holders",
     showPreview: "Is image preview shown?",
     storeDataAsText: "Store file content in JSON result as text",
     maxSize: "Maximum file size in bytes",

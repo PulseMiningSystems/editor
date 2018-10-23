@@ -57,6 +57,7 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
   private isCustomDisplayName: boolean = false;
   private displayNameValue: string;
   public koValue: any;
+  public koName : any;
   public koText: any;
   public koIsDefault: any;
   public koHasError: any;
@@ -73,6 +74,7 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
     this.property_ = property;
     var self = this;
     this.koValue = ko.observable();
+    this.koName = ko.observable(this.property.name);
     this.koValue.subscribe(function(newValue) {
       self.onkoValueChanged(newValue);
     });

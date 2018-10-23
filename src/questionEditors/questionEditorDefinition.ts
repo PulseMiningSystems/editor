@@ -31,7 +31,7 @@ export class SurveyQuestionEditorDefinition {
       ]
     },
     comment: {
-      properties: ["rows", "placeHolder"]
+      properties: ["rows", "placeHolder", "replace"]
     },
     file: {
       properties: [
@@ -106,7 +106,7 @@ export class SurveyQuestionEditorDefinition {
       properties: ["optionsCaption"]
     },
     text: {
-      properties: ["inputType", "placeHolder"]
+      properties: ["inputType", "placeHolder", "replace"]
     },
     boolean: {
       properties: ["label"]
@@ -152,7 +152,7 @@ export class SurveyQuestionEditorDefinition {
       ]
     },
     "matrixdropdowncolumn@text": {
-      properties: ["inputType", "placeHolder", "maxLength"],
+      properties: ["inputType", "placeHolder", "replace", "maxLength"],
       tabs: [
         { name: "validators", index: 10 },
         { name: "visibleIf", index: 12 },
@@ -160,7 +160,7 @@ export class SurveyQuestionEditorDefinition {
       ]
     },
     "matrixdropdowncolumn@comment": {
-      properties: ["rows", "placeHolder", "maxLength"],
+      properties: ["rows", "placeHolder", "replace", "maxLength"],
       tabs: [
         { name: "validators", index: 10 },
         { name: "visibleIf", index: 12 },
@@ -176,7 +176,7 @@ export class SurveyQuestionEditorDefinition {
       tabs: [{ name: "expression", index: 10 }]
     },
     multipletextitem: {
-      properties: ["inputType", "maxLength", "placeHolder"],
+      properties: ["inputType", "maxLength", "placeHolder", "replace"],
       tabs: [{ name: "validators", index: 10 }]
     },
     paneldynamic: {

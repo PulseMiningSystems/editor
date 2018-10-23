@@ -26,7 +26,7 @@ export class SurveyPropertyTextItemsEditor extends SurveyNestedPropertyEditor {
     if (!this.koEditItem()) return "";
     return editorLocalization
       .getString("pe.columnEdit")
-      ["format"](this.koEditItem().koName());
+      ["format"](this.koEditItem().koName);
   }
   protected createNewEditorItem(): any {
     var newItem = new Survey.MultipleTextItem(this.getNewName());
