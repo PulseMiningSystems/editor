@@ -2126,6 +2126,7 @@ ko.components.register("svg-icon", {
       ko.computed(() => {
         var size = (ko.unwrap(params.size) || 16) + "px";
         var svgElem: any = componentInfo.element.childNodes[0];
+        svgElem.parentNode.classList = ko.unwrap(params.iconName);
         svgElem.style.width = size;
         svgElem.style.height = size;
         var node: any = svgElem.childNodes[0];
