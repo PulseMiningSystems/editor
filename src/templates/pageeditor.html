@@ -7,7 +7,7 @@
             <svg-icon class="svd-secondary-icon" params="iconName: 'icon-left'"></svg-icon>
         </span>
     </div>
-
+    <input id="file-input" type="file" style="position: fixed; left: 999999px" />
     <div class="svd-pages" data-bind="sortable: {foreach: editor.pages, options: sortableOptions}, event: {wheel: onWheel}">
         <div tabindex="0" class="svd-page svd-light-border-color" data-bind="key2click, css: $parent.getPageClass($data), clickNoFocus: $parent.onPageClick">
             <span class="svd-page-name" data-bind="text: name"></span>
@@ -27,6 +27,12 @@
                         <span class="svda_action_separator svd-dark-border-color" data-bind="visible: !$parent.isLastPage()"></span>
                         <span class="svd-page-action" data-bind="click: function(model, event) {$parent.copyPage($data); event.stopPropagation();}, attr: {title: $parent.getLocString('survey.Copy')}">
                             <svg-icon class="svd-primary-icon" params="iconName: 'icon-actioncopy'"></svg-icon>
+                        </span>
+                        <span class="svd-page-action" data-bind="click: function(model, event) {$parent.savePage($data); event.stopPropagation();}, attr: {title: $parent.getLocString('survey.addToToolbox')}">
+                            <svg-icon class="svd-primary-icon" params="iconName: 'icon-actionaddtotoolbox'"></svg-icon>
+                        </span>
+                        <span class="svd-page-action" data-bind="click: function(model, event) {$parent.exportPage($data); event.stopPropagation();}, attr: {title: 'Export'}">
+                            <svg-icon class="svd-primary-icon" params="iconName: 'icon-actionupload'"></svg-icon>
                         </span>
                     </div>
                 </div>

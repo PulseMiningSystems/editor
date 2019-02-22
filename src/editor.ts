@@ -675,7 +675,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
       self.doDraggingToolboxItem(item.json, e);
     };
     this.clickToolboxItem = function(item) {
-      self.doClickToolboxItem(item.json);
+      self.doClickToolboxItem(item.json, item.category);
     };
     this.dragEnd = function(item, e) {
       self.dragDropHelper.end();
@@ -1639,9 +1639,18 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   }
   private newQuestions: Array<any> = [];
   private newPanels: Array<any> = [];
-  private doClickToolboxItem(json: any) {
-    var newElement = this.createNewElement(json);
-    this.doClickQuestionCore(newElement);
+  private doClickToolboxItem(json: any, category: string) {
+    if (category === 'page') {
+      let page = JSON.parse(json);
+      this.addPage();
+      page.elements.forEach(element => {
+        var newElement = this.createNewElement(element);
+        this.doClickQuestionCore(newElement);
+      });
+    } else {
+      var newElement = this.createNewElement(json);
+      this.doClickQuestionCore(newElement);
+    }
   }
   public copyElement(element: Survey.Base): Survey.IElement {
     var json = new Survey.JsonObject().toJsonObject(element);
@@ -1910,6 +1919,68 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     this.setModified({ type: "PAGE_ADDED", newValue: newPage });
     return newPage;
   };
+  public savePage = (page: Survey.PageModel): Survey.PageModel => {
+    let template = JSON.parse(this.text);
+    let json = "";
+    template.pages.forEach(item => {
+      if (page.name === item.name) {
+        json = JSON.stringify(item);
+      }
+    });
+    let item = {
+      name: page.name,
+      title: page.name,
+      json: json,
+    };
+    this.toolbox.addCopiedPage(item);
+    return page;
+  };
+  public exportPage = (page: Survey.PageModel) => {
+    let template = JSON.parse(this.text);
+    let json = "";
+    template.pages.forEach(item => {
+      if (page.name === item.name) {
+        json = JSON.stringify(item);
+      }
+    });
+    let item = {
+      name: page.name,
+      json: json,
+    };
+    this.onPageExport(item);
+  };
+  public importPage = () => {
+    let input = <HTMLInputElement>document.getElementById("file-input");
+    let reader = new FileReader();
+    reader.onload = () => this._fileLoaded(reader);
+    if (!this._attached) this._attachListeners(input, reader);
+    input.dispatchEvent(new MouseEvent("click"));
+  };
+  private _attachListeners(input: HTMLInputElement, reader: FileReader) {
+    input.addEventListener("change", () => {
+      if (!input.value) return;
+      reader.readAsText(input.files[0], "text/json");
+    });
+    input.addEventListener("click", () => {
+      input.value = null;
+    });
+    this._attached = true;
+  };
+  private _attached = false;
+  private _fileLoaded = (reader) => {
+    let result = reader.result;
+    try {
+      let page = JSON.parse(result);
+      this.addPage();
+      page.elements.forEach(element => {
+        var newElement = this.createNewElement(element);
+        this.doClickQuestionCore(newElement);
+      });
+    } catch(e) {
+      console.error("not valid json");
+    }
+  };
+  public onPageExport = function(item: any) {};
   /**
    * Delete an element in the survey. It can be a question, a panel or a page.
    * @param element a survey element.

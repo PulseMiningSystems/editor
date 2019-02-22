@@ -19,7 +19,8 @@ export class PagesEditor {
       if (!this.isDraggingPage()) {
         this.prevPagesForSelector = this.editor
           .pages()
-          .concat([<any>{ name: this.getLocString("ed.addNewPage") }]);
+          .concat([<any>{ name: this.getLocString("ed.addNewPage") }])
+          .concat([<any>{ name: "Import Page" }]);
       }
       return this.prevPagesForSelector;
     });
@@ -50,8 +51,12 @@ export class PagesEditor {
       if (!!newVal && typeof newVal.getType === "function") {
         this.selectedPage = newVal;
       } else {
-        if (this.editor.pages().length > 0) {
-          this.addPage();
+        if (newVal.name === "Import Page") {
+          this.importPage();
+        } else {
+          if (this.editor.pages().length > 0) {
+            this.addPage();
+          }
         }
       }
     }
@@ -63,6 +68,19 @@ export class PagesEditor {
 
   copyPage(page: Survey.PageModel) {
     this.editor.copyPage(page);
+  }
+
+  savePage(page: Survey.PageModel) {
+    this.editor.savePage(page);
+  }
+
+  exportPage(page: Survey.PageModel) {
+    this.editor.exportPage(page);
+  }
+
+  importPage() {
+    this.editor.importPage();
+    this._selectedPage(this.editor.survey.currentPage);
   }
 
   deletePage() {

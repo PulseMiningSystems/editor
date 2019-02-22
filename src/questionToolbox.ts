@@ -189,6 +189,23 @@ export class QuestionToolbox {
       this.removeItem(copied[this.copiedItemMaxCount - 1].name);
     this.addItem(item);
   }
+  public addCopiedPage(page: any) {
+    var name = page.name;
+    var title = name;
+    var item = {
+        name: name,
+        title: title,
+        isCopied: true,
+        iconName: "icon-default",
+        json: page.json,
+        category: "page"
+    };
+    if (this.replaceItem(item)) return;
+    var copied = this.copiedItems;
+    if (this.copiedItemMaxCount > 0 && copied.length == this.copiedItemMaxCount)
+        this.removeItem(copied[this.copiedItemMaxCount - 1].name);
+    this.addItem(item);
+  }
   /**
    * Add a toolbox item
    * @param item the toolbox item description
@@ -305,6 +322,10 @@ export class QuestionToolbox {
         category.koCollapsed(!category.koCollapsed());
       }
     } else {
+      var category = this.getCategoryByName(categoryName);
+      if (category) {
+        category.koCollapsed(!category.koCollapsed());
+      }
       this.activeCategory = categoryName;
     }
   }
@@ -458,13 +479,14 @@ export class QuestionToolbox {
       if (!json.type) {
         json.type = widgetJson.name;
       }
+      var category = widgetJson.category ? widgetJson.category : "";
       var item = {
         name: widgetJson.name,
         iconName: iconName,
         title: title,
         json: json,
         isCopied: false,
-        category: ""
+        category: category
       };
       this.itemsValue.push(item);
     }
