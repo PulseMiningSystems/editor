@@ -2,18 +2,121 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.0.74"></a>
+## [1.0.74](https://github.com/surveyjs/editor/compare/v1.0.73...v1.0.74) (2019-03-12)
+
+
+
+<a name="1.0.73"></a>
+## [1.0.73](https://github.com/surveyjs/editor/compare/v1.0.72...v1.0.73) (2019-03-05)
+
+
+
+<a name="1.0.72"></a>
+## [1.0.72](https://github.com/surveyjs/editor/compare/v1.0.71...v1.0.72) (2019-02-27)
+
+
+
+<a name="1.0.71"></a>
+## [1.0.71](https://github.com/surveyjs/editor/compare/v1.0.69...v1.0.71) (2019-02-19)
+
+
+
+<a name="1.0.69"></a>
+## [1.0.69](https://github.com/surveyjs/editor/compare/v1.0.68...v1.0.69) (2019-02-13)
+
+
+
+<a name="1.0.68"></a>
+## [1.0.68](https://github.com/surveyjs/editor/compare/v1.0.67...v1.0.68) (2019-02-07)
+
+
+
+<a name="1.0.67"></a>
+## [1.0.67](https://github.com/surveyjs/editor/compare/v1.0.66...v1.0.67) (2019-02-05)
+
+
+
+<a name="1.0.66"></a>
+## [1.0.66](https://github.com/surveyjs/editor/compare/v1.0.65...v1.0.66) (2019-01-29)
+
+
+
+<a name="1.0.65"></a>
+## [1.0.65](https://github.com/surveyjs/editor/compare/v1.0.64...v1.0.65) (2019-01-22)
+
+
+
+<a name="1.0.64"></a>
+## [1.0.64](https://github.com/surveyjs/editor/compare/v1.0.63...v1.0.64) (2019-01-15)
+
+
+
+<a name="1.0.63"></a>
+## [1.0.63](https://github.com/surveyjs/editor/compare/v1.0.62...v1.0.63) (2018-12-28)
+
+
+
+<a name="1.0.62"></a>
+## [1.0.62](https://github.com/surveyjs/editor/compare/v1.0.61...v1.0.62) (2018-12-27)
+
+
+
+<a name="1.0.61"></a>
+## [1.0.61](https://github.com/surveyjs/editor/compare/v1.0.60...v1.0.61) (2018-12-19)
+
+
+
+<a name="1.0.60"></a>
+## [1.0.60](https://github.com/surveyjs/editor/compare/v1.0.59...v1.0.60) (2018-12-11)
+
+
+
+<a name="1.0.59"></a>
+## [1.0.59](https://github.com/surveyjs/editor/compare/v1.0.58...v1.0.59) (2018-12-04)
+
+
+
+<a name="1.0.58"></a>
+## [1.0.58](https://github.com/surveyjs/editor/compare/v1.0.57...v1.0.58) (2018-11-28)
+
+
+
+<a name="1.0.57"></a>
+## [1.0.57](https://github.com/surveyjs/editor/compare/v1.0.56...v1.0.57) (2018-11-27)
+
+
+
+<a name="1.0.56"></a>
+## [1.0.56](https://github.com/surveyjs/editor/compare/v1.0.55...v1.0.56) (2018-11-20)
+
+
+
+<a name="1.0.55"></a>
+## [1.0.55](https://github.com/surveyjs/editor/compare/v1.0.54...v1.0.55) (2018-11-14)
+
+
+
+<a name="1.0.54"></a>
+## [1.0.54](https://github.com/surveyjs/editor/compare/v1.0.53...v1.0.54) (2018-11-13)
+
+
+
+<a name="1.0.53"></a>
+## [1.0.53](https://github.com/surveyjs/editor/compare/v1.0.52...v1.0.53) (2018-10-30)
+
+
+
 <a name="1.0.52"></a>
-## [1.0.52](https://github.com/PulseMiningSystems/editor/compare/v1.0.51...v1.0.52) (2018-10-16)
+## [1.0.52](https://github.com/surveyjs/editor/compare/v1.0.51...v1.0.52) (2018-10-23)
 
 
 
 <a name="1.0.51"></a>
-## [1.0.51](https://github.com/PulseMiningSystems/editor/compare/v1.0.6...v1.0.51) (2018-10-16)
 
 
 
 <a name="1.0.50"></a>
-## [1.0.50](https://github.com/PulseMiningSystems/editor/compare/v1.0.6...v1.0.50) (2018-10-16)
 
 
 

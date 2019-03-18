@@ -112,9 +112,11 @@ export { SurveysManager } from "../manage";
 export { StylesManager } from "../stylesmanager";
 
 //editorLocalization
+import "../localization/danish";
 import "../localization/french";
 import "../localization/german";
 import "../localization/italian";
+import "../localization/indonesian";
 import "../localization/korean";
 import "../localization/persian";
 import "../localization/polish";
@@ -122,6 +124,7 @@ import "../localization/portuguese";
 import "../localization/simplified-chinese";
 import "../localization/spanish";
 import "../localization/traditional-chinese";
+import "../localization/norwegian";
 
 export {
   Translation,
@@ -138,6 +141,7 @@ export { questionActionsAdorner } from "../adorners/question-actions";
 export { selectItemsEditorAdorner } from "../adorners/select-items-editor";
 export { ratingItemAdorner } from "../adorners/rating-item-editor";
 export { imageItemsAdorner } from "../adorners/image-items";
+export { flowpanelActionsAdorner } from "../adorners/flowpanel-actions";
 
 export {
   IAccordionItemData,

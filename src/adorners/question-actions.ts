@@ -19,7 +19,7 @@ export class QuestionActionsAdorner {
 
   public getStyle(model: ISurveyObjectMenuItem) {
     if (!!model.icon) {
-      return ko.unwrap(model.icon);
+      return ko.unwrap(<any>model.icon);
     }
     return "icon-action" + model.name;
   }
@@ -51,6 +51,8 @@ export var questionActionsAdorner = {
       "<question-actions params='question: model, editor: editor'></question-actions>";
     elements[0].appendChild(decoration);
     ko.applyBindings({ model: model, editor: editor }, decoration);
+    ko.tasks.runEarly();
+    editor.onAdornerRenderedCallback(model, "question-actions", decoration);
   }
 };
 
@@ -58,7 +60,9 @@ registerAdorner("question-actions", questionActionsAdorner);
 
 export var panelActionsAdorner = {
   getMarkerClass: model => {
-    return !!model.isPanel ? "panel_actions" : "";
+    return !!model.isPanel && model.getType() !== "flowpanel"
+      ? "panel_actions"
+      : "";
   },
   getElementName: model => "container",
   afterRender: questionActionsAdorner.afterRender

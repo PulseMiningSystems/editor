@@ -51,7 +51,7 @@ export class SurveyPropertyEditorFactory {
   ): SurveyPropertyEditorBase {
     var editorType = property.type;
     if (
-      property.choices != null &&
+      SurveyPropertyEditorFactory.isDropdownEditor(property) &&
       (!editorType || editorType == SurveyPropertyEditorFactory.defaultEditor)
     ) {
       editorType = "dropdown";
@@ -65,11 +65,30 @@ export class SurveyPropertyEditorFactory {
       if (creator) propertyEditor = creator(property);
     }
     if (!propertyEditor) {
+      if (
+        property.isArray &&
+        Survey.JsonObject.metaData.isDescendantOf(
+          property.className,
+          "itemvalue"
+        )
+      ) {
+        var creator = SurveyPropertyEditorFactory.creatorList["itemvalue[]"];
+        if (creator) propertyEditor = creator(property);
+      }
+    }
+    if (!propertyEditor) {
       creator = SurveyPropertyEditorFactory.findParentCreator(editorType);
       propertyEditor = creator(property);
     }
     propertyEditor.onChanged = func;
     return propertyEditor;
+  }
+  private static isDropdownEditor(
+    property: Survey.JsonObjectProperty
+  ): boolean {
+    if (property["hasChoices"] !== undefined)
+      return property["hasChoices"] === true;
+    return property.choices != null;
   }
   private static createCustomEditor(
     name: string,
@@ -108,7 +127,7 @@ export class SurveyDropdownPropertyEditor extends SurveyPropertyEditorBase {
   public koHasFocus: any;
   constructor(property: Survey.JsonObjectProperty) {
     super(property);
-    this.koChoices = ko.observableArray(this.getLocalizableChoices());
+    this.koChoices = ko.observableArray([]);
     this.koHasFocus = ko.observable(false);
     var self = this;
     this.koHasFocus.subscribe(function(newValue) {
@@ -136,9 +155,12 @@ export class SurveyDropdownPropertyEditor extends SurveyPropertyEditorBase {
     super.setObject(value);
     this.beginValueUpdating();
     if (this.koChoices().length == 0) {
-      this.koChoices(this.getLocalizableChoices());
+      this.updateChoices();
     }
     this.endValueUpdating();
+  }
+  public updateChoices() {
+    this.koChoices(this.getLocalizableChoices());
   }
   private getLocalizableChoices() {
     var choices = this.getPropertyChoices();
@@ -155,10 +177,16 @@ export class SurveyDropdownPropertyEditor extends SurveyPropertyEditorBase {
     return res;
   }
   private getPropertyChoices(): Array<any> {
-    if (!this.property) return [];
-    return this.property["getChoices"]
-      ? this.property["getChoices"](this.object)
-      : this.property.choices;
+    if (!this.property) return null;
+    if (!!this.object) {
+      var obj = this.object;
+      this.object["getEditingPropertyValue"] = function(name: string) {
+        if (!!obj.editingProperties && obj.editingProperties[name] != undefined)
+          return obj.editingProperties[name];
+        return obj[name];
+      };
+    }
+    return this.property.getChoices(this.object);
   }
 }
 export class SurveyBooleanPropertyEditor extends SurveyPropertyEditorBase {

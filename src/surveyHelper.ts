@@ -69,7 +69,8 @@ export class SurveyHelper {
     if (objType === ObjType.Question) return "question";
     return "unknown";
   }
-  public static getObjectName(obj: any): string {
+  public static getObjectName(obj: any, showObjectTitle = false): string {
+    if (showObjectTitle && obj["title"]) return obj["title"];
     if (obj["name"]) return obj["name"];
     var objType = SurveyHelper.getObjectType(obj);
     if (objType != ObjType.Page) return "";
@@ -97,6 +98,12 @@ export class SurveyHelper {
     ) => boolean = null
   ): boolean {
     if (!property || !property.visible) return false;
+    if (
+      !!property.isVisible &&
+      !!obj.getLayoutType &&
+      !property.isVisible(obj.getLayoutType())
+    )
+      return false;
     if (onCanShowPropertyCallback && !onCanShowPropertyCallback(obj, property))
       return false;
     return true;

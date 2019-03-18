@@ -207,6 +207,16 @@ function elementOnAfterRendering(
     surveyElement.renderedElement.classList.add("svd-dark-bg-color");
   }
   surveyElement.renderedElement.classList.add("svd_q_design_border");
+
+  var isRowLayout =
+    !surveyElement.getLayoutType || surveyElement.getLayoutType() == "row";
+  var opt = surveyElement.allowingOptions;
+  opt.allowCopy = opt.allowCopy && isRowLayout;
+  opt.allowAddToToolbox = opt.allowAddToToolbox && isRowLayout;
+  opt.allowChangeType = opt.allowChangeType && isRowLayout;
+  opt.allowShowHideTitle = opt.allowShowHideTitle && isRowLayout;
+  opt.allowChangeRequired = opt.allowChangeRequired && isRowLayout;
+
   getSurvey(surveyElement).updateElementAllowingOptions(surveyElement);
   if (surveyElement.koIsSelected())
     surveyElement.renderedElement.classList.add(
@@ -381,11 +391,34 @@ Survey.Panel.prototype["onAfterRenderPanel"] = function(el) {
   }
   elementOnAfterRendering(el, this, true, this.koIsDragging());
 };
-
 Survey.Panel.prototype["onSelectedElementChanged"] = function() {
   if (getSurvey(this) == null) return;
   this.koIsSelected(getSurvey(this)["selectedElementValue"] == this);
 };
+
+if (!!Survey["FlowPanel"]) {
+  Survey["FlowPanel"].prototype["onCreating"] = function() {
+    //TODO
+    this.placeHolder = "Enter here text or drop a question";
+    elementOnCreating(this);
+  };
+  Survey["FlowPanel"].prototype["onAfterRenderPanel"] = function(el) {
+    if (!getSurvey(this).isDesignMode) return;
+    elementOnAfterRendering(el, this, true, this.koIsDragging());
+    var pnlEl = el.querySelector("f-panel");
+    if (!!pnlEl) {
+      if (!!pnlEl.className) {
+        pnlEl.className += " svd_flowpanel";
+      } else {
+        pnlEl.className = "svd_flowpanel";
+      }
+    }
+  };
+  Survey["FlowPanel"].prototype["onSelectedElementChanged"] = function() {
+    if (getSurvey(this) == null) return;
+    this.koIsSelected(getSurvey(this)["selectedElementValue"] == this);
+  };
+}
 
 var questionPrototype = !!Survey["QuestionBase"]
   ? Survey["QuestionBase"].prototype
@@ -403,4 +436,11 @@ questionPrototype["onAfterRenderQuestion"] = function(el) {
 questionPrototype["onSelectedElementChanged"] = function() {
   if (getSurvey(this) == null) return;
   this.koIsSelected(getSurvey(this)["selectedElementValue"] == this);
+};
+
+Survey.QuestionSelectBaseImplementor.prototype["onCreated"] = function() {
+  var q: any = this.question;
+  this.question.registerFunctionOnPropertyValueChanged("choices", function() {
+    q["koElementType"].notifySubscribers();
+  });
 };

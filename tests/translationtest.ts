@@ -193,13 +193,17 @@ QUnit.test("Question validators name", function(assert) {
 QUnit.test("Default locale name", function(assert) {
   var survey = new Survey.Survey();
   var translation = new Translation(survey);
-  assert.equal(translation.getLocaleName(""), "english", "Default is english");
+  assert.equal(
+    translation.getLocaleName(""),
+    "Default (english)",
+    "Default is english"
+  );
   survey = new Survey.Survey();
   survey.locale = "de";
   translation.survey = survey;
   assert.equal(
     translation.getLocaleName(""),
-    "deutsch",
+    "Default (deutsch)",
     "Default is deutsch now"
   );
 });
@@ -329,5 +333,68 @@ QUnit.test("Export to csv", function(assert) {
     question.columns[0].locTitle.getLocaleText("de"),
     "col1 de1",
     "de text in column title has been changed"
+  );
+});
+
+QUnit.test("Merging a locale with default", function(assert) {
+  var survey = new Survey.Survey({
+    locale: "de",
+    elements: [
+      {
+        type: "text",
+        name: "question1",
+        title: {
+          de: "title de",
+          fr: "title fr"
+        }
+      },
+      {
+        type: "text",
+        name: "question2",
+        title: {
+          default: "title default",
+          de: "title de",
+          fr: "title fr"
+        }
+      },
+      {
+        type: "text",
+        name: "question3",
+        title: {
+          default: "title default",
+          fr: "title fr"
+        }
+      }
+    ]
+  });
+  var translation = new Translation(survey);
+  assert.equal(translation.locales.length, 3, "There are 3 locales");
+  assert.equal(
+    translation.koCanMergeLocaleWithDefault(),
+    true,
+    "Locale can be merged"
+  );
+  assert.equal(
+    translation.koMergeLocaleWithDefaultText(),
+    "Merge deutsch with default locale",
+    "merge text is not empty"
+  );
+  translation.mergeLocaleWithDefault();
+  assert.equal(translation.locales.length, 2, "There are 2 locales now");
+  assert.equal(
+    translation.koCanMergeLocaleWithDefault(),
+    false,
+    "Locale can not be merged"
+  );
+  assert.equal(
+    translation.koMergeLocaleWithDefaultText(),
+    "",
+    "merge text is empty"
+  );
+  translation.addLocale("de");
+  assert.equal(
+    translation.koCanMergeLocaleWithDefault(),
+    true,
+    "Locale can be merged again"
   );
 });

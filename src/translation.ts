@@ -10,6 +10,7 @@ export class TranslationItemBase {
     return false;
   }
   public fillLocales(locales: Array<string>) {}
+  public mergeLocaleWithDefault(loc: string) {}
 }
 
 export class TranslationItem extends TranslationItemBase {
@@ -47,6 +48,12 @@ export class TranslationItem extends TranslationItemBase {
         locales.push(key);
       }
     }
+  }
+  public mergeLocaleWithDefault(loc: string) {
+    var locText = this.locString.getLocaleText(loc);
+    if (!locText) return;
+    this.locString.setLocaleText("", locText);
+    this.locString.setLocaleText(loc, null);
   }
 }
 
@@ -133,6 +140,11 @@ export class TranslationGroup extends TranslationItemBase {
       if (groups[i].hasItems) return true;
     }
     return false;
+  }
+  public mergeLocaleWithDefault(loc: string) {
+    for (var i = 0; i < this.itemValues.length; i++) {
+      this.itemValues[i].mergeLocaleWithDefault(loc);
+    }
   }
   private fillItems() {
     if (this.isItemValueArray(this.obj)) {
@@ -254,7 +266,11 @@ export class Translation implements ITranslationLocales {
   public koIsEmpty: any;
   public koExportToSCVFile: any;
   public koImportFromSCVFile: any;
+  public koCanMergeLocaleWithDefault: any;
+  public koMergeLocaleWithDefault: any;
+  public koMergeLocaleWithDefaultText: any;
   public importFinishedCallback: () => void;
+  public availableTranlationsChangedCallback: () => void;
   private rootValue: TranslationGroup;
   private surveyValue: Survey.Survey;
   constructor(survey: Survey.Survey, showAllStrings: boolean = false) {
@@ -267,6 +283,14 @@ export class Translation implements ITranslationLocales {
     this.koAvailableLanguages = ko.observableArray();
     this.koSelectedLanguageToAdd = ko.observable(null);
     this.koFilteredPage = ko.observable();
+    this.koCanMergeLocaleWithDefault = ko.observable(false);
+    this.koMergeLocaleWithDefaultText = ko.computed(function() {
+      if (!this.koCanMergeLocaleWithDefault()) return "";
+      var locText = this.getLocaleName(this.defaultLocale);
+      return editorLocalization
+        .getString("ed.translationMergeLocaleWithDefault")
+        ["format"](locText);
+    }, this);
     this.koFilteredPages = ko.observableArray([
       {
         value: null,
@@ -292,6 +316,9 @@ export class Translation implements ITranslationLocales {
       if (el.files.length < 1) return;
       self.importFromSCVFile(el.files[0]);
       el.value = "";
+    };
+    this.koMergeLocaleWithDefault = function() {
+      self.mergeLocaleWithDefault();
     };
     this.survey = survey;
   }
@@ -335,10 +362,7 @@ export class Translation implements ITranslationLocales {
       : Survey.surveyLocalization.defaultLocale;
   }
   public getLocaleName(loc: string) {
-    if (!loc) {
-      loc = this.defaultLocale;
-    }
-    return editorLocalization.getLocaleName(loc);
+    return editorLocalization.getLocaleName(loc, this.defaultLocale);
   }
   public hasLocale(locale: string): boolean {
     var locales = this.koLocales();
@@ -451,6 +475,12 @@ export class Translation implements ITranslationLocales {
     };
     fileReader.readAsText(file);
   }
+  public mergeLocaleWithDefault() {
+    if (!this.hasLocale(this.defaultLocale)) return;
+    this.root.mergeLocaleWithDefault(this.defaultLocale);
+    this.koLocales([{ locale: "", koVisible: ko.observable(true) }]);
+    this.reset();
+  }
   private updateItemWithStrings(
     item: TranslationItem,
     values: Array<string>,
@@ -508,6 +538,7 @@ export class Translation implements ITranslationLocales {
       locales.push({ locale: loc, koVisible: ko.observable(true) });
     }
     this.koLocales(locales);
+    this.koCanMergeLocaleWithDefault(this.hasLocale(this.defaultLocale));
     this.updateAvailableTranlations();
   }
   private updateAvailableTranlations() {
@@ -522,6 +553,8 @@ export class Translation implements ITranslationLocales {
     }
     this.koSelectedLanguageToAdd(null);
     this.koAvailableLanguages(res);
+    !!this.availableTranlationsChangedCallback &&
+      this.availableTranlationsChangedCallback();
   }
   private updateFilteredPages() {
     var res = [{ value: null, text: this.showAllPagesText }];

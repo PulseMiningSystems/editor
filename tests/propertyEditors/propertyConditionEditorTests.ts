@@ -180,6 +180,69 @@ QUnit.test("SurveyPropertyConditionEditor.addCondition", function(assert) {
 });
 
 QUnit.test(
+  "Apostrophes in answers break VisibleIf - https://github.com/surveyjs/editor/issues/476",
+  function(assert) {
+    var question = new Survey.QuestionText("q1");
+    var property = Survey.JsonObject.metaData.findProperty(
+      "question",
+      "visibleIf"
+    );
+    var editor = new SurveyPropertyConditionEditor(property);
+    editor.koAddConditionQuestion("q2");
+    editor.koAddConditionValue("d'2");
+    editor.object = question;
+    editor.addCondition();
+    assert.equal(
+      editor.koTextValue(),
+      "{q2} = 'd\\'2'",
+      "Apostrophe is escaped"
+    );
+  }
+);
+
+QUnit.test(
+  "SurveyPropertyConditionEditor add question for dynamic panel",
+  function(assert) {
+    var survey = new Survey.Survey({
+      elements: [
+        {
+          name: "dp",
+          type: "paneldynamic",
+          templateElements: [
+            {
+              name: "q1",
+              type: "text",
+              visibleIf: "{panel.q2} = 1"
+            },
+            {
+              name: "q2",
+              type: "text"
+            }
+          ]
+        }
+      ]
+    });
+    survey.setDesignMode(true);
+    var panel = <Survey.QuestionPanelDynamic>survey.getQuestionByName("dp");
+    var question = panel.template.getQuestionByName("q1");
+    var property = Survey.JsonObject.metaData.findProperty(
+      "question",
+      "visibleIf"
+    );
+    var editor = new SurveyPropertyConditionEditor(property);
+    editor.object = question;
+    editor.koAddConditionQuestion("panel.q2");
+    editor.koAddConditionValue("2");
+    editor.addCondition();
+    assert.equal(
+      editor.koTextValue(),
+      "{panel.q2} = 1 and {panel.q2} = 2",
+      "condition was added correctly"
+    );
+  }
+);
+
+QUnit.test(
   "SurveyPropertyConditionEditor, use question.valueName, bug: #353",
   function(assert) {
     var property = Survey.JsonObject.metaData.findProperty(
@@ -201,6 +264,7 @@ QUnit.test(
 
     var editor = new SurveyPropertyConditionEditor(property);
     editor.object = question;
+    editor.beforeShow();
     editor.koAddConditionQuestion("q2");
     editor.koAddConditionValue("abc");
     editor.addCondition();
@@ -247,6 +311,7 @@ QUnit.test(
 
     var editor = new SurveyPropertyConditionEditor(property);
     editor.object = question;
+    editor.beforeShow();
 
     editor.koAddConditionQuestion("q2.");
     assert.equal(editor.koHasValueSurvey(), true, "There is value survey");
@@ -293,6 +358,7 @@ QUnit.test(
     question2.valueName = "val2";
     var editor = new SurveyPropertyConditionEditor(property);
     editor.object = question;
+    editor.beforeShow();
     editor.koAddConditionQuestion("q2");
     editor.koAddConditionValue("abc");
     editor.apply();
@@ -318,9 +384,14 @@ QUnit.test("SurveyPropertyConditionEditor.allConditionQuestions", function(
   page.addNewQuestion("text", "q3");
   var editor = new SurveyPropertyConditionEditor(property);
   editor.object = question;
+  var res = [];
+  for (var i = 0; i < editor.allConditionQuestions.length; i++) {
+    var item = editor.allConditionQuestions[i];
+    res.push({ name: item.name, text: item.text });
+  }
   assert.deepEqual(
-    editor.allConditionQuestions,
-    ["q2", "q3"],
+    res,
+    [{ name: "q2", text: "q2" }, { name: "q3", text: "q3" }],
     "returns questions correctly"
   );
 });
@@ -344,12 +415,14 @@ QUnit.test(
     var editor = new SurveyPropertyConditionEditor(property);
     editor.object = column;
     assert.equal(
-      editor.allConditionQuestions.indexOf("row.col1") > -1,
+      editor.allConditionQuestions.filter(e => e.name === "row.col1").length >
+        0,
       true,
       "row.col1 is here"
     );
     assert.equal(
-      editor.allConditionQuestions.indexOf("row.col2") > -1,
+      editor.allConditionQuestions.filter(e => e.name === "row.col2").length >
+        0,
       false,
       "row.col2 is not here"
     );
@@ -372,16 +445,18 @@ QUnit.test(
     question.template.addNewQuestion("text", "q2");
     question.template.addNewQuestion("text", "q3");
     question.panelCount = 1;
-    var panelQuestion = question.panels[0].questions[1];
+    var panelQuestion = question.template.questions[1];
     var editor = new SurveyPropertyConditionEditor(property);
     editor.object = panelQuestion;
     assert.equal(
-      editor.allConditionQuestions.indexOf("panel.q1") > -1,
+      editor.allConditionQuestions.filter(e => e.name === "panel.q1").length >
+        0,
       true,
       "panel.q1 is here"
     );
     assert.equal(
-      editor.allConditionQuestions.indexOf("panel.q2") > -1,
+      editor.allConditionQuestions.filter(e => e.name === "panel.q2").length >
+        0,
       false,
       "panel.q2 is not here"
     );

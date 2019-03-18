@@ -6,6 +6,13 @@ export interface ISurveyObjectEditorOptions {
   alwaySaveTextInPropertyEditors: boolean;
   showApplyButtonInEditors: boolean;
   useTabsInElementEditor: boolean;
+  showObjectTitles: boolean;
+  showTitlesInExpressions: boolean;
+  onIsEditorReadOnlyCallback(
+    obj: Survey.Base,
+    editor: SurveyPropertyEditorBase,
+    readOnly: boolean
+  ): boolean;
   onItemValueAddedCallback(
     propertyName: string,
     itemValue: Survey.ItemValue,
@@ -43,6 +50,19 @@ export interface ISurveyObjectEditorOptions {
     obj: Survey.Base
   ): any;
   onGetElementEditorTitleCallback(obj: Survey.Base, title: string): string;
+  onConditionValueSurveyCreatedCallBack(
+    valueQuestionName: string,
+    propertyName: string,
+    obj: Survey.Base,
+    editor: SurveyPropertyEditorBase,
+    survey: Survey.Survey
+  );
+  onConditionQuestionsGetListCallback(
+    propertyName: string,
+    obj: Survey.Base,
+    editor: SurveyPropertyEditorBase,
+    list: any[]
+  );
 }
 
 export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
@@ -65,6 +85,7 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
   public koDisplayError: any;
   public isTabProperty: boolean = false;
   public isInplaceProperty: boolean = false;
+  public readOnly: any;
   public onChanged: (newValue: any) => any;
   public onGetLocale: () => string;
   public onValueUpdated: (newValue: any) => any;
@@ -93,6 +114,7 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
     });
     this.setIsRequired();
     this.setTitleAndDisplayName();
+    this.readOnly = ko.observable(this.getReadOnly());
   }
   public get editorType(): string {
     throw "editorType is not defined";
@@ -109,8 +131,12 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
   public get editablePropertyName(): string {
     return this.property ? this.property.name : "";
   }
-  public get readOnly() {
-    return this.property ? this.property.readOnly : false;
+  private getReadOnly(): boolean {
+    var res = this.property ? this.property.readOnly : false;
+    if (!!this.options && !!this.property && !!this.object) {
+      res = this.options.onIsEditorReadOnlyCallback(this.object, this, res);
+    }
+    return res;
   }
   public get alwaysShowEditor(): boolean {
     return false;
@@ -173,6 +199,7 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
         this.object,
         this
       );
+      this.readOnly(this.getReadOnly());
     }
   }
 
@@ -202,7 +229,7 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
   }
   protected checkForErrors(): boolean {
     var errorText = "";
-    if (this.isRequired) {
+    if (this.isRequired || this.checkForItemValue()) {
       var er = this.isCurrentValueEmpty;
       if (er) {
         errorText = this.getLocString("pe.propertyIsEmpty");
@@ -222,6 +249,16 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
     }
     this.koErrorText(errorText);
     return errorText !== "";
+  }
+  private checkForItemValue() {
+    //TODO Problem is in 882ca3ac commit. ItemValue without value should be invalid. Need to better fix for the problem.
+    return (
+      this.property &&
+      this.property.name === "value" &&
+      this.objectValue &&
+      typeof this.objectValue.getType === "function" &&
+      this.objectValue.getType() === "itemvalue"
+    );
   }
   public get isRequired(): boolean {
     return this.isRequriedValue;
@@ -326,14 +363,17 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
         newValue: null,
         doValidation: false
       };
+      this.updateEditingProperties(newValue);
       this.options.onValueChangingCallback(options);
       if (!this.isValueEmpty(options.newValue)) {
-        this.koValue(options.newValue);
+        newValue = options.newValue;
+        this.koValue(newValue);
       }
       if (options.doValidation) {
         this.hasError();
       }
     }
+    this.updateEditingProperties(newValue);
     if (!this.isApplyinNewValue) {
       this.editingValue = newValue;
     }
@@ -341,6 +381,14 @@ export class SurveyPropertyEditorBase implements Survey.ILocalizableOwner {
 
     if (this.property && this.object && this.getValue() == newValue) return;
     if (this.onChanged != null) this.onChanged(newValue);
+  }
+  private updateEditingProperties(newValue: any) {
+    if (!this.isModal && !!this.object) {
+      if (!this.object.editingProperties) {
+        this.object.editingProperties = {};
+      }
+      this.object.editingProperties[this.property.name] = newValue;
+    }
   }
   private isValueEmpty(val): boolean {
     return Survey.Helpers.isValueEmpty(val);

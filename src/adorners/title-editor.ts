@@ -9,21 +9,23 @@ var templateHtml = require("html-loader?interpolate!val-loader!./title-editor.ht
 const FRIENDLY_PADDING = 36;
 function resizeInput(target) {
   let computedStyle = window.getComputedStyle(target);
-  target.style.width = (getTextWidth(target.value, computedStyle.font) + FRIENDLY_PADDING) + 'px';
+  target.style.width =
+    getTextWidth(target.value, computedStyle.font) + FRIENDLY_PADDING + "px";
 }
 
 /**
  * Uses canvas.measureText to compute and return the width of the given text of given font in pixels.
- * 
+ *
  * @param {String} text The text to be rendered.
  * @param {String} font The css font descriptor that text is to be rendered with (e.g. "bold 14px verdana").
- * 
+ *
  * @see https://stackoverflow.com/questions/118241/calculate-text-width-with-javascript/21015393#21015393
  */
 let cachedCanvas;
 function getTextWidth(text, font) {
   // re-use canvas object for better performance
-  var canvas = cachedCanvas || (cachedCanvas = document.createElement("canvas"));
+  var canvas =
+    cachedCanvas || (cachedCanvas = document.createElement("canvas"));
   var context = canvas.getContext("2d");
   context.font = font;
   var metrics = context.measureText(text);
@@ -44,7 +46,9 @@ export class TitleInplaceEditor {
     var holder = this.rootElement.parentElement.parentElement;
     for (var i = 0; i < holder.children.length - 1; i++) {
       var element = holder.children[i];
-      func(element);
+      if (element.className.indexOf("svda-custom-content") === -1) {
+        func(element);
+      }
     }
   }
 
@@ -69,14 +73,14 @@ export class TitleInplaceEditor {
   hideEditor = () => {
     this.isEditing(false);
     this.forNeibours(element => {
-      element.style.display = element.style["oldDisplay"];
+      element.style.display = element.dataset["sjsOldDisplay"];
     });
   };
   startEdit = (model, event) => {
     this.editingName(this.prevName());
     this.isEditing(true);
     this.forNeibours(element => {
-      element.style["oldDisplay"] = element.style.display;
+      element.dataset["sjsOldDisplay"] = element.style.display;
       element.style.display = "none";
     });
     var inputElem = this.rootElement.getElementsByTagName("input")[0];
@@ -116,6 +120,15 @@ ko.components.register("title-editor", {
         params.name
       );
       model.valueChanged = newValue => {
+        var options = {
+          propertyName: property.name,
+          obj: params.model,
+          value: newValue,
+          newValue: null,
+          doValidation: false
+        };
+        params.editor.onValueChangingCallback(options);
+        newValue = options.newValue === null ? options.value : options.newValue;
         params.model[params.name] = newValue;
         params.editor.onPropertyValueChanged(property, params.model, newValue);
       };
@@ -136,6 +149,8 @@ export var titleAdorner = {
       "<title-editor params='name: \"title\", model: model, editor: editor'></title-editor>";
     elements[0].appendChild(decoration);
     ko.applyBindings({ model: model, editor: editor }, decoration);
+    ko.tasks.runEarly();
+    editor.onAdornerRenderedCallback(model, "title", decoration);
   }
 };
 
@@ -157,6 +172,13 @@ export var itemTitleAdorner = {
         "<title-editor params='name: \"title\", model: model, editor: editor'></title-editor>";
       elements[i].appendChild(decoration);
       ko.applyBindings({ model: model.items[i], editor: editor }, decoration);
+      ko.tasks.runEarly();
+      editor.onAdornerRenderedCallback(
+        model,
+        "item-title",
+        decoration,
+        model.items[i]
+      );
     }
   }
 };

@@ -79,21 +79,22 @@ export class SurveyQuestionEditorDefinition {
         { name: "choicesByUrl", index: 11 }
       ]
     },
-    "itemvalues@choices": {
+    "itemvalue[]@choices": {
+      title: "Rules",
+      tabs: [
+        { name: "general", visible: false },
+        { name: "visibleIf", visible: true },
+        { name: "enableIf", visible: true }
+      ]
+    },
+    "itemvalue[]@rows": {
       title: "Rules",
       tabs: [
         { name: "general", visible: false },
         { name: "visibleIf", visible: true }
       ]
     },
-    "itemvalues@rows": {
-      title: "Rules",
-      tabs: [
-        { name: "general", visible: false },
-        { name: "visibleIf", visible: true }
-      ]
-    },
-    "itemvalues@columns": {
+    "itemvalue[]@columns": {
       title: "Rules",
       tabs: [
         { name: "general", visible: false },
@@ -112,6 +113,7 @@ export class SurveyQuestionEditorDefinition {
       properties: ["label"]
     },
     expression: {
+      properties: ["currency", "displayStyle"],
       tabs: [{ name: "expression", index: 10 }]
     },
     matrixdropdowncolumn: {
@@ -121,7 +123,8 @@ export class SurveyQuestionEditorDefinition {
       tabs: [
         { name: "general", visible: false },
         { name: "visibleIf", index: 12 },
-        { name: "enableIf", index: 20 }
+        { name: "enableIf", index: 20 },
+        { name: "requiredIf", index: 30 }
       ]
     },
     "matrixdropdowncolumn@checkbox": {
@@ -130,7 +133,8 @@ export class SurveyQuestionEditorDefinition {
         { name: "choices", index: 10 },
         { name: "choicesByUrl", index: 11 },
         { name: "visibleIf", index: 12 },
-        { name: "enableIf", index: 20 }
+        { name: "enableIf", index: 20 },
+        { name: "requiredIf", index: 30 }
       ]
     },
     "matrixdropdowncolumn@radiogroup": {
@@ -139,7 +143,8 @@ export class SurveyQuestionEditorDefinition {
         { name: "choices", index: 10 },
         { name: "choicesByUrl", index: 11 },
         { name: "visibleIf", index: 12 },
-        { name: "enableIf", index: 20 }
+        { name: "enableIf", index: 20 },
+        { name: "requiredIf", index: 30 }
       ]
     },
     "matrixdropdowncolumn@dropdown": {
@@ -148,7 +153,8 @@ export class SurveyQuestionEditorDefinition {
         { name: "choices", index: 10 },
         { name: "choicesByUrl", index: 11 },
         { name: "visibleIf", index: 12 },
-        { name: "enableIf", index: 20 }
+        { name: "enableIf", index: 20 },
+        { name: "requiredIf", index: 30 }
       ]
     },
     "matrixdropdowncolumn@text": {
@@ -156,7 +162,8 @@ export class SurveyQuestionEditorDefinition {
       tabs: [
         { name: "validators", index: 10 },
         { name: "visibleIf", index: 12 },
-        { name: "enableIf", index: 20 }
+        { name: "enableIf", index: 20 },
+        { name: "requiredIf", index: 30 }
       ]
     },
     "matrixdropdowncolumn@comment": {
@@ -164,15 +171,20 @@ export class SurveyQuestionEditorDefinition {
       tabs: [
         { name: "validators", index: 10 },
         { name: "visibleIf", index: 12 },
-        { name: "enableIf", index: 20 }
+        { name: "enableIf", index: 20 },
+        { name: "requiredIf", index: 30 }
       ]
     },
     "matrixdropdowncolumn@boolean": {
       properties: ["defaultValue"],
-      tabs: [{ name: "visibleIf", index: 12 }, { name: "enableIf", index: 20 }]
+      tabs: [
+        { name: "visibleIf", index: 12 },
+        { name: "enableIf", index: 20 },
+        { name: "requiredIf", index: 30 }
+      ]
     },
     "matrixdropdowncolumn@expression": {
-      properties: ["name"],
+      properties: ["name", "displayStyle", "currency"],
       tabs: [{ name: "expression", index: 10 }]
     },
     multipletextitem: {

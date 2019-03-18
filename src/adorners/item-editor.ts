@@ -43,6 +43,10 @@ class ItemInplaceEditor extends TitleInplaceEditor {
       this.question["noneItem"] !== this.item
     );
   }
+
+  get isLastItem() {
+    return this.question.choices.length === 1;
+  }
 }
 
 ko.components.register("item-editor", {
@@ -60,8 +64,19 @@ ko.components.register("item-editor", {
         params.name
       );
       model.valueChanged = newValue => {
+        var options = {
+          propertyName: property.name,
+          obj: params.model,
+          value: newValue,
+          newValue: null,
+          doValidation: false
+        };
+        params.editor.onValueChangingCallback(options);
+        newValue = options.newValue === null ? options.value : options.newValue;
         params.target[params.name] = newValue;
         params.editor.onPropertyValueChanged(property, params.target, newValue);
+        !!params.valueChanged &&
+          params.valueChanged(params.target, property.name, newValue);
       };
       return model;
     }
@@ -114,6 +129,13 @@ export var itemAdorner = {
         },
         decoration
       );
+      ko.tasks.runEarly();
+      editor.onAdornerRenderedCallback(
+        model,
+        "choices-label",
+        decoration,
+        itemValue
+      );
     }
   }
 };
@@ -129,7 +151,8 @@ export var createAddItemHandler = (
   var values = question.choices.map(function(item) {
     return item.itemValue;
   });
-  nextValue = getNextValue("item", values);
+  var itemText = Survey.surveyLocalization.getString("choices_Item");
+  nextValue = getNextValue(itemText, values);
 
   var itemValue = new Survey.ItemValue(nextValue);
   itemValue.locOwner = <any>{

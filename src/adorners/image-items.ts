@@ -29,6 +29,10 @@ class ImageItemInplaceEditor {
     }
   }
 
+  get isLastItem() {
+    return this.question.choices.length === 1;
+  }
+
   chooseImage(model, event) {
     var fileInput = this.itemsRoot.getElementsByClassName(
       "svda-choose-file"
@@ -74,6 +78,15 @@ ko.components.register("image-item-editor", {
       model.valueChanged = files => {
         if (!files[0]) return;
         params.editor.uploadFiles(files, (_, link) => {
+          var options = {
+            propertyName: property.name,
+            obj: params.model,
+            value: link,
+            newValue: null,
+            doValidation: false
+          };
+          params.editor.onValueChangingCallback(options);
+          link = options.newValue === null ? options.value : options.newValue;
           params.target[params.name] = link;
           params.editor.onPropertyValueChanged(property, params.target, link);
         });
@@ -111,6 +124,13 @@ export var imageItemsAdorner = {
         },
         decoration
       );
+      ko.tasks.runEarly();
+      editor.onAdornerRenderedCallback(
+        model,
+        "image-items",
+        decoration,
+        model.choices[i]
+      );
     }
 
     var sortable = Sortable.create(itemsRoot, {
@@ -139,8 +159,9 @@ export var imageItemsAdorner = {
           files.push(fileInput.files[i]);
         }
 
+        var itemText = Survey.surveyLocalization.getString("choices_Item");
         var nextValue = getNextValue(
-          "item",
+          itemText,
           (model.choices || []).map(c => c.value)
         );
         var itemValue = new (<any>Survey)["ItemValue"](
@@ -170,6 +191,15 @@ export var imageItemsAdorner = {
           "imageLink"
         );
         editor.uploadFiles(files, (_, link) => {
+          var options = {
+            propertyName: property.name,
+            obj: itemValue,
+            value: link,
+            newValue: null,
+            doValidation: false
+          };
+          editor.onValueChangingCallback(options);
+          link = options.newValue === null ? options.value : options.newValue;
           itemValue["imageLink"] = link;
           editor.onPropertyValueChanged(property, itemValue, link);
         });

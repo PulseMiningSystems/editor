@@ -5,6 +5,7 @@ import { SurveyPropertyEditorBase } from "./propertyEditorBase";
 import { SurveyPropertyEditorFactory } from "./propertyEditorFactory";
 import * as editorLocalization from "../editorLocalization";
 import { SurveyValidator } from "survey-knockout";
+import { stringLiteral } from "babel-types";
 
 export class SurveyPropertyConditionEditor extends SurveyPropertyTextEditor {
   public availableOperators = [];
@@ -51,8 +52,9 @@ export class SurveyPropertyConditionEditor extends SurveyPropertyTextEditor {
     });
     this.koAddConditionValue.subscribe(function(newValue) {
       if (self.koHasValueSurvey()) {
+        var newParsedValue = !newValue ? {} : JSON.parse(newValue);
         self.isValueChanging = true;
-        self.koValueSurvey().setValue("question", JSON.parse(newValue));
+        self.koValueSurvey().setValue("question", newParsedValue);
         self.isValueChanging = false;
       }
     });
@@ -84,8 +86,8 @@ export class SurveyPropertyConditionEditor extends SurveyPropertyTextEditor {
     };
     this.resetAddConditionValues();
   }
-  public setObject(value: any) {
-    super.setObject(value);
+  public beforeShow() {
+    super.beforeShow();
     this.addConditionQuestionsHash = {};
     this.koAddConditionQuestions(this.allConditionQuestions);
   }
@@ -104,16 +106,48 @@ export class SurveyPropertyConditionEditor extends SurveyPropertyTextEditor {
     );
   }
   public get allConditionQuestions(): any[] {
+    var res = this.getConditionQuetions();
+    res.sort(function(a, b) {
+      return a.text.localeCompare(b.text);
+    });
+    return res;
+  }
+  private getConditionQuetions(): any[] {
     if (!this.object) return [];
-    var names = [];
+    var res = [];
     var questions = this.availableQuestions;
-    for (var i = 0; i < questions.length; i++) {
-      this.addConditionQuestionNames(questions[i], names);
+    if (questions.length > 0 && questions[0]["addConditionObjectsByContext"]) {
+      for (var i = 0; i < questions.length; i++) {
+        if (this.object == questions[i]) continue;
+        questions[i].addConditionObjectsByContext(res, this.object);
+      }
+      this.addConditionQuestionsHash = {};
+      for (var i = 0; i < res.length; i++) {
+        if (!this.options || !this.options.showTitlesInExpressions) {
+          res[i].text = res[i].name;
+        }
+        this.addConditionQuestionsHash[res[i].name] = res[i].question;
+      }
+    } else {
+      //TODO remove old code
+      var names = [];
+      for (var i = 0; i < questions.length; i++) {
+        this.addConditionQuestionNames(questions[i], names);
+      }
+      this.addMatrixColumnsToCondition(names);
+      this.addPanelDynamicQuestionsToCondition(names);
+      for (var i = 0; i < names.length; i++) {
+        res.push({ name: names[i], text: names[i] });
+      }
     }
-    this.addMatrixColumnsToCondition(names);
-    this.addPanelDynamicQuestionsToCondition(names);
-    names.sort();
-    return names;
+    !!this.options &&
+      this.options.onConditionQuestionsGetListCallback(
+        this.editablePropertyName,
+        this.object,
+        this,
+        res
+      );
+    return res;
   }
   private addQuestionNames(
     question: Survey.Question,
@@ -153,16 +187,17 @@ export class SurveyPropertyConditionEditor extends SurveyPropertyTextEditor {
   private addPanelDynamicQuestionsToCondition(names: Array<string>) {
     if (!(this.object.data instanceof Survey.QuestionPanelDynamicItem)) return;
     var panel: Survey.PanelModel = this.object.data.panel;
-    var questionNames = [];
     for (var i = 0; i < panel.questions.length; i++) {
       var q = panel.questions[i];
-      if (q.name == this.object.name) continue;
+      var questionNames = [];
       this.addConditionQuestionNames(<Survey.Question>q, questionNames);
-    }
-    for (var i = 0; i < questionNames.length; i++) {
-      var questionName = "panel." + questionNames[i];
-      names.push(questionName);
-      this.addConditionQuestionsHash[questionName] = panel;
+      for (var j = 0; j < questionNames.length; j++) {
+        var questionName = "panel." + questionNames[j];
+        if (q.name != this.object.name) {
+          names.push(questionName);
+        }
+        this.addConditionQuestionsHash[questionName] = q;
+      }
     }
   }
   private onValueSurveyChanged(questionName: string, operator: string) {
@@ -178,10 +213,10 @@ export class SurveyPropertyConditionEditor extends SurveyPropertyTextEditor {
     var json = this.getQuestionConditionJson(questionName, operator);
     this.koHasValueSurvey(!!json && !!json.type);
     if (this.koHasValueSurvey()) {
-      this.koValueSurvey(this.createValueSurvey(json));
+      this.koValueSurvey(this.createValueSurvey(json, questionName));
     }
   }
-  private createValueSurvey(qjson: any): Survey.Survey {
+  private createValueSurvey(qjson: any, questionName: string): Survey.Survey {
     qjson.name = "question";
     qjson.title = editorLocalization.editorLocalization.getString(
       "pe.conditionValueQuestionTitle"
@@ -203,6 +238,16 @@ export class SurveyPropertyConditionEditor extends SurveyPropertyTextEditor {
         self.koAddConditionValue(JSON.stringify(options.value));
       }
     });
+    if (this.options) {
+      var propName = !!this.property ? this.property.name : "";
+      this.options.onConditionValueSurveyCreatedCallBack(
+        questionName,
+        propName,
+        this.object,
+        this,
+        survey
+      );
+    }
     return survey;
   }
   private getQuestionByName(questionName: string): Survey.Question {
@@ -287,7 +332,7 @@ export class SurveyPropertyConditionEditor extends SurveyPropertyTextEditor {
     if (val[0] == "[") return val;
     if (!this.isQuote(val[0])) val = "'" + val;
     if (!this.isQuote(val[val.length - 1])) val = val + "'";
-    return val;
+    return val.replace(/(?!^)(['"])(?!$)/g, "\\$1");
   }
   private isQuote(ch: string): boolean {
     return ch == "'" || ch == '"';

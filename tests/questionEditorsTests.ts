@@ -34,13 +34,23 @@ QUnit.test("Create correct question editor property tab ", function(assert) {
   );
   assert.equal(
     tab.properties.rows[0].properties[0].editor.editorType,
-    "itemvalues",
+    "itemvalue[]",
     "create correct property editor"
   );
-  assert.deepEqual(
-    tab.properties.rows[0].properties[0].editor.editingValue,
-    ["item1"],
-    "set value to property editor correctly"
+  assert.equal(
+    tab.properties.rows[0].properties[0].editor.editingValue.length,
+    1,
+    "set value to property editor correctly (length)"
+  );
+  assert.equal(
+    tab.properties.rows[0].properties[0].editor.editingValue[0].value,
+    "item1",
+    "set value to property editor correctly (value)"
+  );
+  assert.equal(
+    tab.properties.rows[0].properties[0].editor.editingValue[0].text,
+    "item1",
+    "set value to property editor correctly (text)"
   );
 
   property = properties.getProperty("visibleIf");
@@ -351,9 +361,7 @@ QUnit.test("General properties, has errors", function(assert) {
 });
 
 QUnit.test("Question editor definition: getProperties", function(assert) {
-  var baseProperties = SurveyQuestionEditorDefinition.getProperties(
-    "question"
-  );
+  var baseProperties = SurveyQuestionEditorDefinition.getProperties("question");
   var properties = SurveyQuestionEditorDefinition.getProperties("rating");
   assert.equal(
     properties.length,
@@ -547,5 +555,78 @@ QUnit.test("Question editor: on property value changing", function(assert) {
     targetEditor["koChoices"](),
     ["item 1", "item 2"],
     "The choices has two items"
+  );
+  Survey.JsonObject.metaData.removeProperty("question", "targetEntity");
+  Survey.JsonObject.metaData.removeProperty("question", "targetField");
+});
+
+QUnit.test("Question editor: depended property, choices", function(assert) {
+  Survey.JsonObject.metaData.addProperty("question", { name: "targetEntity" });
+  Survey.JsonObject.metaData.addProperty("question", {
+    name: "targetField",
+    choices: function(obj: any) {
+      var entity = !!obj ? obj.getEditingPropertyValue("targetEntity") : null;
+      if (!entity) return [];
+      return [entity + " 1", entity + " 2"];
+    }
+  });
+  var question = new Survey.QuestionText("q1");
+  var editor = new SurveyEditor();
+  editor.onPropertyEditorObjectAssign.add(function(editor, options) {
+    if (options.propertyName != "targetField") return;
+    if (options.obj) {
+      options.obj.targetFieldEditor = options.editor;
+    }
+  });
+  editor.onPropertyValueChanging.add(function(editor, options) {
+    if (options.propertyName != "targetEntity") return;
+    if (options.obj && options.obj.targetFieldEditor) {
+      options.obj.targetFieldEditor.updateChoices();
+    }
+  });
+  var properties = new SurveyQuestionEditorProperties(
+    question,
+    ["targetEntity", "targetField"],
+    null,
+    editor
+  );
+  var entityEditor = properties.rows[0].properties[0].editor;
+  var targetEditor = properties.rows[1].properties[0].editor;
+
+  assert.deepEqual(targetEditor["koChoices"](), [], "The choices is empty");
+  entityEditor.koValue("item");
+  var choices = targetEditor["koChoices"]();
+  assert.deepEqual(choices.length, 2, "The choices has two items");
+  assert.deepEqual(choices[0].value, "item 1", "The first item value");
+  assert.deepEqual(choices[1].value, "item 2", "The second item value");
+
+  Survey.JsonObject.metaData.removeProperty("question", "targetEntity");
+  Survey.JsonObject.metaData.removeProperty("question", "targetField");
+});
+QUnit.test("Question editor: change editor.readOnly", function(assert) {
+  var question = new Survey.QuestionText("q2");
+  var editor = new SurveyEditor();
+  editor.onGetPropertyReadOnly.add(function(editor, options) {
+    if (options.propertyName != "name") return;
+    options.readOnly = options.obj.name == "q1";
+  });
+  var properties = new SurveyQuestionEditorProperties(
+    question,
+    ["name"],
+    null,
+    editor
+  );
+  var questionEditor = properties.rows[0].properties[0].editor;
+  assert.equal(
+    questionEditor.readOnly(),
+    false,
+    "The question 'q2' is not readOnly"
+  );
+  question.name = "q1";
+  questionEditor.object = question;
+  assert.equal(
+    questionEditor.readOnly(),
+    true,
+    "The question 'q1' is readOnly"
   );
 });

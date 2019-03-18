@@ -40,6 +40,10 @@ class RatingItemEditor extends TitleInplaceEditor {
     }
     model.editor.onQuestionEditorChanged(question);
   }
+
+  get isLastItem() {
+    return this.question.visibleRateValues.length === 1;
+  }
 }
 
 ko.components.register("rating-item-editor", {
@@ -87,7 +91,8 @@ var createAddItemHandler = (
     var values = question.rateValues.map(function(item) {
       return item.itemValue;
     });
-    nextValue = getNextValue("item", values);
+    var itemText = Survey.surveyLocalization.getString("choices_Item");
+    nextValue = getNextValue(itemText, values);
 
     var itemValue = new Survey.ItemValue(nextValue);
     !!onItemAdding && onItemAdding(itemValue);
@@ -134,6 +139,8 @@ export var ratingItemAdorner = {
         },
         decoration
       );
+      ko.tasks.runEarly();
+      editor.onAdornerRenderedCallback(model, "rating-item", decoration, item);
     }
 
     var addNew = document.createElement("span");

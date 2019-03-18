@@ -23,6 +23,7 @@ import { SurveyForDesigner } from "./surveyjsObjects";
 import { StylesManager } from "./stylesmanager";
 import { itemAdorner } from "./adorners/item-editor";
 import { Translation } from "./translation";
+import { isProperty } from "babel-types";
 
 /**
  * The toolbar item description
@@ -89,10 +90,10 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   private options: any;
   private stateValue: string = "";
   private dragDropHelper: DragDropHelper = null;
-  private showJSONEditorTabValue: boolean;
-  private showTestSurveyTabValue: boolean;
-  private showEmbededSurveyTabValue: boolean;
-  private showTranslationTabValue: boolean;
+  private showJSONEditorTabValue = ko.observable<boolean>(false);
+  private showTestSurveyTabValue = ko.observable<boolean>(false);
+  private showEmbededSurveyTabValue = ko.observable<boolean>(false);
+  private showTranslationTabValue = ko.observable<boolean>(false);
   private select2: any = null;
   private alwaySaveTextInPropertyEditorsValue: boolean = false;
   private showApplyButtonValue: boolean = true;
@@ -133,6 +134,16 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   public useTabsInElementEditor = false;
 
   /**
+   * You need to set this property to true if you want to show titles instead of names in pages editor and object selector.
+   */
+  public showObjectTitles = false;
+
+  /**
+   * You need to set this property to true if you want to show titles instead of names in expression editor.
+   */
+  public showTitlesInExpressions = false;
+
+  /**
    * This property is assign to the survey.surveyId property on showing in the "Embed Survey" tab.
    * @see showEmbededSurveyTab
    */
@@ -151,9 +162,46 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    * <br/> sender the survey editor object that fires the event
    * <br/> options.obj the survey object, Survey, Page, Panel or Question
    * <br/> options.property the object property (Survey.JsonObjectProperty object). It has name, className, type, visible, readOnly and other properties.
+   * <br/> options.canShow a boolean value. It is true by default. Set it false to hide the property from the Property Grid and in Question Editor.
+   */
+  public onShowingProperty: Survey.Event<
+    (sender: SurveyEditor, options: any) => any,
+    any
+  > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
+  /**
+   * Obsolete, please use onShowingProperty event.
+   * The event is called before showing a property in the Property Grid or in Question Editor.
+   * <br/> sender the survey editor object that fires the event
+   * <br/> options.obj the survey object, Survey, Page, Panel or Question
+   * <br/> options.property the object property (Survey.JsonObjectProperty object). It has name, className, type, visible, readOnly and other properties.
    * <br/> options.canShow a boolean value. It is true by default. Set it false to hide the property from the Property Grid or in Question Editor
+   * @see onShowingProperty
    */
   public onCanShowProperty: Survey.Event<
+    (sender: SurveyEditor, options: any) => any,
+    any
+  > = this.onShowingProperty;
+  /**
+   * The event is called when editor tab has been rendered.
+   * <br/> sender the survey editor object that fires the event
+   * <br/> options.tabName the name of the rendered tab
+   * <br/> options.elements the rendered elements
+   * <br/> options.model current context model
+   * <br/> options.tabData the data of the rendered tab
+   */
+  public onEditorTabRendered: Survey.Event<
+    (sender: SurveyEditor, options: any) => any,
+    any
+  > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
+  /**
+   * The event is called on setting a readOnly property of the property editor. By default the property.readOnly property is used.
+   * You may changed it and make the property editor read only or enabled for a particular object.
+   * <br/> sender the survey editor object that fires the event
+   * <br/> options.obj the survey object, Survey, Page, Panel or Question
+   * <br/> options.property the object property (Survey.JsonObjectProperty object). It has name, className, type, visible, readOnly and other properties.
+   * <br/> options.readOnly a boolean value. It has value equals to options.readOnly property by default. You may change it.
+   */
+  public onGetPropertyReadOnly: Survey.Event<
     (sender: SurveyEditor, options: any) => any,
     any
   > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
@@ -296,6 +344,8 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    * <br/> options.source: the source dragged object
    * <br/> options.target: the drop target
    * <br/> options.newElement: a new element. It is defined if a user drops question or panel from the toolbox
+   * <br/>
+   * <br/> options.type: "TRANSLATIONS_CHANGED"
    */
   public onModified: Survey.Event<
     (sender: SurveyEditor, options: any) => any,
@@ -369,6 +419,31 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    * @see onPropertyValueChanging
    */
   public onPropertyEditorObjectAssign: Survey.Event<
+    (sender: SurveyEditor, options: any) => any,
+    any
+  > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
+  /**
+   * Use this event to modify the survey that used on setting value for condition/expression properties, like visibleIf, enableIf and so on.
+   * <br/> sender the survey editor object that fires the event
+   * <br/> options.obj  the survey object which property is edited in the Property Editor.
+   * <br/> options.propertyName  the name of the edited property.
+   * <br/> options.editor the instance of Property Editor.
+   * <br/> options.valueQuestionName the name of the question that shows in the survey for choosing the value
+   * <br/> options.survey the instance of the survey that allows to choose the value. You may modify it before it shows to the end-user
+   */
+  public onConditionValueSurveyCreated: Survey.Event<
+    (sender: SurveyEditor, options: any) => any,
+    any
+  > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
+  /**
+   * Use this event to modify the list (name and titles) od the questions available in a condition editor.
+   * <br/> sender the survey editor object that fires the event
+   * <br/> options.obj  the survey object which property is edited in the Property Editor.
+   * <br/> options.propertyName  the name of the edited property.
+   * <br/> options.editor the instance of Property Editor.
+   * <br/> options.list the the list of the questions available for condition
+   */
+  public onConditionQuestionsGetList: Survey.Event<
     (sender: SurveyEditor, options: any) => any,
     any
   > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
@@ -457,8 +532,8 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
   /**
    * The event is fired on uploading the file. There are two properties in options: options.name options.callback.
-   * <br/> sender the survey object that fires the event
-   * name: name, file: file, accept: accept
+   * <br/> sender the survey editor object that fires the event
+   * <br/>  name: name, file: file, accept: accept
    * <br/> file the Javascript File object
    * <br/> callback called on upload complete
    * @see uploadFile
@@ -473,6 +548,34 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    * @see showTranslationTab
    */
   public onTranslationImported: Survey.Event<
+    (sender: SurveyEditor, options: any) => any,
+    any
+  > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
+  /**
+   * Use this event to control drag&drop operations.
+   * <br/> sender the survey editor object that fires the event.
+   * <br/> options.survey the editing survey object.
+   * <br/> options.allow set it to false to disable dragging.
+   * <br/> options.target a target element that is dragging.
+   * <br/> options.source a source element. It can be null, if it is a new element, dragging from toolbox.
+   * <br/> options.parent a page or panel where target element is dragging.
+   * <br/> options.insertBefore an element before the target element is dragging. It can be null if parent container (page or panel) is empty or dragging an element under the last element of the container.
+   * <br/> options.insertAfter an element after the target element is dragging. It can be null if parent container (page or panel) is empty or dragging element to the top of the parent container.
+   */
+  public onDragDropAllow: Survey.Event<
+    (sender: SurveyEditor, options: any) => any,
+    any
+  > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
+  /**
+   * Use this event to get access rendered adorder.
+   * <br/> sender the survey editor object that fires the event.
+   * <br/> options.survey the editing survey object.
+   * <br/> options.question the survey element of the adorner.
+   * <br/> options.adorner the adorner id.
+   * <br/> options.element a root adorner element.
+   * <br/> options.context a context for adorner element, e.g. current item of a select base question.
+   */
+  public onAdornerRendered: Survey.Event<
     (sender: SurveyEditor, options: any) => any,
     any
   > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
@@ -514,11 +617,6 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   koTestSurveyWidth: any;
   koDesignerHeight: any;
   koShowPagesToolbox: any;
-  selectDesignerClick: any;
-  selectEditorClick: any;
-  selectTestClick: any;
-  selectEmbedClick: any;
-  selectTranslationClick: any;
   generateValidJSONClick: any;
   generateReadableJSONClick: any;
   doUndoClick: any;
@@ -536,7 +634,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    * @param renderedElement HtmlElement or html element id where Survey Editor will be rendered
    * @param options Survey Editor options. The following options are available: showJSONEditorTab,
    * showTestSurveyTab, showEmbededSurveyTab, showTranslationTab, inplaceEditForValues, useTabsInElementEditor, showPropertyGrid,
-   * questionTypes, showOptions, generateValidJSON, isAutoSave, designerHeight, showErrorOnFailedSave
+   * questionTypes, showOptions, generateValidJSON, isAutoSave, designerHeight, showErrorOnFailedSave, showObjectTitles, showTitlesInExpressions
    */
   constructor(renderedElement: any = null, options: any = null) {
     this.koShowOptions = ko.observable();
@@ -572,7 +670,8 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     });
     this.surveyObjects = new SurveyObjects(
       this.koObjects,
-      this.koSelectedObject
+      this.koSelectedObject,
+      this.showObjectTitles
     );
     this.surveyObjects.getItemTextCallback = function(obj, text) {
       var options = { obj: obj, text: text };
@@ -629,10 +728,14 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
       return self.onCanShowObjectProperty(object, property);
     };
     this.surveyLive = new SurveyLiveTester();
+    this.surveyLive.showObjectTitles = this.showObjectTitles;
     this.surveyEmbeding = new SurveyEmbedingWindow();
     this.translationValue = new Translation(new Survey.Survey());
     this.translation.importFinishedCallback = function() {
       self.onTranslationImported.fire(self, {});
+    };
+    this.translation.availableTranlationsChangedCallback = () => {
+      this.setModified({ type: "TRANSLATIONS_CHANGED" });
     };
     this.toolboxValue = new QuestionToolbox(
       this.options && this.options.questionTypes
@@ -644,21 +747,6 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     this.koIsShowDesigner = ko.computed(function() {
       return self.koViewType() == "designer";
     });
-    this.selectDesignerClick = function() {
-      self.showDesigner();
-    };
-    this.selectEditorClick = function() {
-      self.showJsonEditor();
-    };
-    this.selectTestClick = function() {
-      self.showTestSurvey();
-    };
-    this.selectEmbedClick = function() {
-      self.showEmbedEditor();
-    };
-    this.selectTranslationClick = function() {
-      self.showTranslationEditor();
-    };
     this.generateValidJSONClick = function() {
       self.koGenerateValidJSON(true);
     };
@@ -690,6 +778,53 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
 
     this.jsonEditor = new SurveyJSONEditor();
 
+    ko.computed(() => {
+      this.tabs([]);
+      this.tabs.push({
+        name: "designer",
+        title: this.getLocString("ed.designer"),
+        template: "se-tab-designer",
+        data: this,
+        action: () => this.showDesigner()
+      });
+      if (this.showJSONEditorTab) {
+        this.tabs.push({
+          name: "editor",
+          title: this.getLocString("ed.jsonEditor"),
+          template: "jsoneditor",
+          data: this.jsonEditor,
+          action: () => this.showJsonEditor()
+        });
+      }
+      if (this.showTestSurveyTab) {
+        this.tabs.push({
+          name: "test",
+          title: this.getLocString("ed.testSurvey"),
+          template: "se-tab-test",
+          data: this,
+          action: () => this.showTestSurvey()
+        });
+      }
+      if (this.showEmbededSurveyTab) {
+        this.tabs.push({
+          name: "embed",
+          title: this.getLocString("ed.embedSurvey"),
+          template: "surveyembeding",
+          data: this.surveyEmbeding,
+          action: () => this.showEmbedEditor()
+        });
+      }
+      if (this.showTranslationTab) {
+        this.tabs.push({
+          name: "translation",
+          title: this.getLocString("ed.translation"),
+          template: "translation",
+          data: this.translation,
+          action: () => this.showTranslationEditor()
+        });
+      }
+    });
+
     if (renderedElement) {
       this.render(renderedElement);
     }
@@ -698,6 +833,8 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
 
     this.addToolbarItems();
   }
+
+  tabs = ko.observableArray();
 
   themeCss = ko.computed(() => {
     return ["bootstrap", "bootstrapmaterial"].indexOf(
@@ -827,22 +964,26 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     if (!options.hasOwnProperty("generateValidJSON"))
       options.generateValidJSON = true;
     this.options = options;
-    this.showJSONEditorTabValue =
+    this.showJSONEditorTabValue(
       typeof options.showJSONEditorTab !== "undefined"
         ? options.showJSONEditorTab
-        : true;
-    this.showTestSurveyTabValue =
+        : true
+    );
+    this.showTestSurveyTabValue(
       typeof options.showTestSurveyTab !== "undefined"
         ? options.showTestSurveyTab
-        : true;
-    this.showEmbededSurveyTabValue =
+        : true
+    );
+    this.showEmbededSurveyTabValue(
       typeof options.showEmbededSurveyTab !== "undefined"
         ? options.showEmbededSurveyTab
-        : false;
-    this.showTranslationTabValue =
+        : false
+    );
+    this.showTranslationTabValue(
       typeof options.showTranslationTab !== "undefined"
         ? options.showTranslationTab
-        : false;
+        : false
+    );
     this.haveCommercialLicense =
       typeof options.haveCommercialLicense !== "undefined"
         ? options.haveCommercialLicense
@@ -850,6 +991,14 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     this.inplaceEditForValues =
       typeof options.inplaceEditForValues !== "undefined"
         ? options.inplaceEditForValues
+        : false;
+    this.showObjectTitles =
+      typeof options.showObjectTitles !== "undefined"
+        ? options.showObjectTitles
+        : false;
+    this.showTitlesInExpressions =
+      typeof options.showTitlesInExpressions !== "undefined"
+        ? options.showTitlesInExpressions
         : false;
     this.useTabsInElementEditor =
       typeof options.useTabsInElementEditor !== "undefined"
@@ -932,8 +1081,8 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    * The Survey JSON as a text. Use it to get Survey JSON or change it.
    */
   public get text() {
-    if (this.koIsShowDesigner()) return this.getSurveyTextFromDesigner();
-    return this.jsonEditor.text;
+    if (this.koViewType() == "editor") return this.jsonEditor.text;
+    return this.getSurveyTextFromDesigner();
   }
   public set text(value: string) {
     this.changeText(value, true);
@@ -1061,37 +1210,37 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    * Set it to true to show "JSON Editor" tab and to false to hide the tab
    */
   public get showJSONEditorTab() {
-    return this.showJSONEditorTabValue;
+    return this.showJSONEditorTabValue();
   }
   public set showJSONEditorTab(value: boolean) {
-    this.showJSONEditorTabValue = value;
+    this.showJSONEditorTabValue(value);
   }
   /**
    * Set it to true to show "Test Survey" tab and to false to hide the tab
    */
   public get showTestSurveyTab() {
-    return this.showTestSurveyTabValue;
+    return this.showTestSurveyTabValue();
   }
   public set showTestSurveyTab(value: boolean) {
-    this.showTestSurveyTabValue = value;
+    this.showTestSurveyTabValue(value);
   }
   /**
    * Set it to true to show "Embed Survey" tab and to false to hide the tab
    */
   public get showEmbededSurveyTab() {
-    return this.showEmbededSurveyTabValue;
+    return this.showEmbededSurveyTabValue();
   }
   public set showEmbededSurveyTab(value: boolean) {
-    this.showEmbededSurveyTabValue = value;
+    this.showEmbededSurveyTabValue(value);
   }
   /**
    * Set it to true to show "Translation" tab and to false to hide the tab
    */
   public get showTranslationTab() {
-    return this.showTranslationTabValue;
+    return this.showTranslationTabValue();
   }
   public set showTranslationTab(value: boolean) {
-    this.showTranslationTabValue = value;
+    this.showTranslationTabValue(value);
   }
   /**
    * Set it to true to activate RTL support
@@ -1175,11 +1324,9 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     if (parentPanel.elements.indexOf(question) !== -1) {
       this.surveyObjects.addElement(question, parentPanel);
     }
-    this.survey.render();
   }
   private doOnElementRemoved(question: Survey.Question) {
     this.surveyObjects.removeObject(question);
-    this.survey.render();
   }
   private doOnPanelAdded(panel: Survey.Panel, parentPanel: any) {
     if (!this.dragDropHelper.isMoving) {
@@ -1190,7 +1337,6 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     if (parentPanel.elements.indexOf(panel) !== -1) {
       this.surveyObjects.addElement(panel, parentPanel);
     }
-    this.survey.render();
   }
   private doOnPageAdded(page: Survey.Page) {
     if (this.isPageUpdating) return;
@@ -1202,9 +1348,13 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     obj: any,
     newValue: any
   ) {
-    var isDefault = property.isDefaultValue(newValue);
     var oldValue = obj[property.name];
-    obj[property.name] = newValue;
+    if (property.name === "page" && typeof newValue === "string") {
+      obj[property.name] = obj.survey.getPageByName(newValue);
+    } else {
+      obj[property.name] = newValue;
+    }
+
     if (property.name == "name") {
       var newName = this.generateUniqueName(obj, newValue);
       if (newName != newValue) {
@@ -1235,7 +1385,6 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     ) {
       this.selectedObjectEditorValue.objectChanged();
     }
-    this.survey.render();
     return null;
   }
   private doUndoRedo(item: UndoRedoItem) {
@@ -1422,15 +1571,20 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
       },
       this.renderedElement
     );
-    this.surveyValue()["getEditor"] = () => self;
-    this.surveyValue()["setJsonObject"](json); //TODO
+    this.surveyValue().getEditor = () => self;
+    this.surveyValue().setJsonObject(json);
     if (this.surveyValue().isEmpty) {
-      this.surveyValue()["setJsonObject"](this.getDefaultSurveyJson()); //TODO
+      this.surveyValue().setJsonObject(this.getDefaultSurveyJson());
     }
-    this.surveyValue()["dragDropHelper"] = this.dragDropHelper;
+    Survey.surveyLocalization.currentLocale = this.surveyValue()["locale"];
+    this.surveyValue().dragDropHelper = this.dragDropHelper;
     this.surveyValue().onUpdateElementAllowingOptions = function(options) {
       self.onElementAllowOperations.fire(self, options);
     };
+    this.surveyValue().onDragDropAllow.add(function(sender, options) {
+      options.survey = sender;
+      self.onDragDropAllow.fire(self, options);
+    });
     this.surveyValue().onGetMenuItems.add((sender, options) => {
       let opts = options.obj.allowingOptions;
       if (!opts) opts = {};
@@ -1495,7 +1649,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
         opts.allowChangeRequired &&
         typeof options.obj.isRequired !== "undefined"
       ) {
-        var isRequired = ko.observable<boolean>(options.obj.isRequired);
+        var isRequired = ko.computed(() => options.obj.isRequired);
         options.items.push({
           name: "isrequired",
           text: this.getLocString("pe.isRequired"),
@@ -1507,7 +1661,6 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
           }),
           onClick: (question: Survey.Question) => {
             question.isRequired = !question.isRequired;
-            isRequired(question.isRequired);
             this.onQuestionEditorChanged(question);
           }
         });
@@ -1725,7 +1878,9 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   }
   private getNewName(type: string): string {
     if (type == "page") return SurveyHelper.getNewPageName(this.pages());
-    return type == "panel" ? this.getNewPanelName() : this.getNewQuestionName();
+    return type == "panel" || type == "flowpanel"
+      ? this.getNewPanelName()
+      : this.getNewQuestionName();
   }
   private getNewQuestionName(): string {
     return SurveyHelper.getNewQuestionName(this.getAllQuestions());
@@ -1862,8 +2017,8 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
       type: "QUESTION_CHANGED_BY_EDITOR",
       question: question
     });
-    this.survey.endLoadingFromJson();
-    this.survey.render();
+    //question.endLoadingFromJson();
+    //this.survey.endLoadingFromJson();
   }
 
   //TODO why this is need ? (ko problem)
@@ -1871,7 +2026,15 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     this.isPageUpdating = true;
     try {
       var selectedObject = this.koSelectedObject().value;
-      if (SurveyHelper.getObjectType(selectedObject) !== ObjType.Page) return;
+      if (SurveyHelper.getObjectType(selectedObject) !== ObjType.Page) {
+        if (
+          SurveyHelper.getObjectType(selectedObject) === ObjType.Question &&
+          !!selectedObject["koElementType"]
+        ) {
+          selectedObject["koElementType"].notifySubscribers();
+        }
+        return;
+      }
       var index = this.pages.indexOf(selectedObject);
       this.pages.splice(index, 1);
       this.pages.splice(index, 0, selectedObject);
@@ -2009,7 +2172,6 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
       type: "OBJECT_DELETED",
       target: obj
     });
-    this.survey.render();
   }
   private showLiveSurvey() {
     var self = this;
@@ -2064,6 +2226,34 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   }
   set showApplyButtonInEditors(value: boolean) {
     this.showApplyButtonValue = value;
+  }
+  onEditorTabRenderedCallback = (
+    tabName: string,
+    elements: HTMLDivElement[],
+    model: any,
+    tabData: any
+  ) => {
+    this.onEditorTabRendered.fire(this, {
+      tabName,
+      elements,
+      model,
+      tabData
+    });
+  };
+  onIsEditorReadOnlyCallback(
+    obj: Survey.Base,
+    editor: SurveyPropertyEditorBase,
+    readOnly: boolean
+  ): boolean {
+    if (this.onGetPropertyReadOnly.isEmpty) return readOnly;
+    var options = {
+      obj: obj,
+      property: editor.property,
+      readOnly: readOnly,
+      propertyName: editor.property.name
+    };
+    this.onGetPropertyReadOnly.fire(this, options);
+    return options.readOnly;
   }
   onItemValueAddedCallback(
     propertyName: string,
@@ -2153,6 +2343,51 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   onGetElementEditorTitleCallback(obj: Survey.Base, title: string): string {
     return title;
   }
+  onConditionValueSurveyCreatedCallBack(
+    valueQuestionName: string,
+    propertyName: string,
+    obj: Survey.Base,
+    editor: SurveyPropertyEditorBase,
+    survey: Survey.Survey
+  ) {
+    var options = {
+      valueQuestionName: valueQuestionName,
+      propertyName: propertyName,
+      obj: obj,
+      editor: editor,
+      survey: survey
+    };
+    this.onConditionValueSurveyCreated.fire(this, options);
+  }
+  onConditionQuestionsGetListCallback(
+    propertyName: string,
+    obj: Survey.Base,
+    editor: SurveyPropertyEditorBase,
+    list: any[]
+  ) {
+    var options = {
+      propertyName: propertyName,
+      obj: obj,
+      editor: editor,
+      list: list
+    };
+    this.onConditionQuestionsGetList.fire(this, options);
+  }
+  onAdornerRenderedCallback(
+    question: Survey.Question,
+    adorner: string,
+    element: HTMLElement,
+    context?: any
+  ) {
+    var options = {
+      survey: this.survey,
+      question: question,
+      adorner: adorner,
+      element: element,
+      context: context
+    };
+    this.onAdornerRendered.fire(this, options);
+  }
   /**
    * Upload the files on a server
    * @param files files to upload
@@ -2177,18 +2412,11 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   }
 }
 
-var koSurveyTemplate = new Survey.SurveyTemplateText()["text"];
-koSurveyTemplate = koSurveyTemplate.replace(
-  "name: 'survey-content', afterRender: koEventAfterRender",
-  "name: 'survey-content', data: survey"
-);
-//koSurveyTemplate = "<div data-bind='data: survey'>" + koSurveyTemplate + "</div>";
-
 ko.components.register("survey-widget", {
   viewModel: function(params) {
     this.survey = params.survey;
   },
-  template: koSurveyTemplate
+  template: "<!-- ko template: { name: 'survey-content', data: survey, afterRender: $parent.koEventAfterRender } --><!-- /ko -->"
 });
 
 ko.components.register("svg-icon", {
