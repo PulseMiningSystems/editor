@@ -7,19 +7,8 @@
     <!-- /ko -->
   </ul>
   <div class="panel card svd_content svd-dark-bg-color">
-            <div class="col-lg-2 col-md-2 col-sm-1 col-xs-1 svd_toolbox svd-dark-bg-color">
-                                <!-- ko if: $data.isCopied -->
-                                <span class="delete_widget" style="float: right" data-bind="click: function(data,event) { $root.toolbox.removeItem(data.name); event.stopPropagation(); }">
-                                    <svg-icon class="svd-primary-icon" params="iconName: 'icon-actiondelete'"></svg-icon>
-                                </span>
-                                <!-- /ko -->
     <!-- ko foreach: tabs -->
     <div data-bind="visible: $parent.koViewType() == name">
-                    <!-- ko if: $data.isCopied -->
-                    <span class="delete_widget" style="float: right" data-bind="click: function(data,event) { $root.toolbox.removeItem(data.name); event.stopPropagation(); }">
-                        <svg-icon class="svd-primary-icon" params="iconName: 'icon-actiondelete'"></svg-icon>
-                    </span>
-                    <!-- /ko -->
       <!-- ko template: { name: template, data: data, afterRender: function(element, model) { $parent.onEditorTabRenderedCallback(name, element, model, $data); } } -->
       <!-- /ko -->
     </div>

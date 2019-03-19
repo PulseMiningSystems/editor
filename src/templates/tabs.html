@@ -51,6 +51,11 @@
                 class="svd_toolbox_item_text hidden-sm hidden-xs"
                 data-bind="text:title"
               ></span>
+              <!-- ko if: $data.isCopied -->
+              <span class="delete_widget" style="float: right" data-bind="click: function(data,event) { $root.toolbox.removeItem(data.name); event.stopPropagation(); }">
+                <svg-icon class="svd-primary-icon" params="iconName: 'icon-actiondelete'"></svg-icon>
+              </span>
+              <!-- /ko -->
             </div>
             <!-- /ko  -->
           </div>
