@@ -52,6 +52,9 @@ export class SurveyLiveTester {
     this.survey = new Survey.Survey();
     this.koSurvey = ko.observable(this.survey);
   }
+  public getJson(): any {
+    return JSON.stringify(this.survey.data);
+  }
   public setJSON(json: any) {
     this.json = json;
     if (json != null) {
@@ -121,6 +124,15 @@ export class SurveyLiveTester {
   }
   public get resultsTitle() {
     return editorLocalization.getString("ed.resultsTitle");
+  }
+  public get resultsType() {
+    return editorLocalization.getString("ed.resultsType");
+  }
+  public get resultsDescription() {
+    return editorLocalization.getString("ed.resultsDescription");
+  }
+  public get resultsSequence() {
+    return editorLocalization.getString("ed.resultsSequence");
   }
   public get resultsName() {
     return editorLocalization.getString("ed.resultsName");

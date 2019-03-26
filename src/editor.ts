@@ -1561,6 +1561,9 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     }
     return json;
   }
+  public getTestSurveyData(): any {
+    return this.surveyLive.getJson();
+  }
   private initSurvey(json: any) {
     var self = this;
     this.surveyValue(new SurveyForDesigner());

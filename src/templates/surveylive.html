@@ -43,7 +43,10 @@
           <table>
               <thead>
                   <tr class="svd-light-background-color">
+                      <th class="svd-dark-border-color" data-bind="text: resultsType"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsSequence"></th>
                       <th class="svd-dark-border-color" data-bind="text: resultsTitle"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsDescription"></th>
                       <th class="svd-dark-border-color" data-bind="text: resultsName"></th>
                       <th class="svd-dark-border-color" data-bind="text: resultsValue"></th>
                       <th class="svd-dark-border-color" data-bind="text: resultsDisplayValue"></th>
@@ -62,11 +65,14 @@
 </script>
 <script type="text/html" id="survey-result-table-row">
   <tr data-bind="click: function() { isNode && collapsed(!collapsed()); }">
+      <td class="svd-dark-border-color" data-bind="text: type"></td>
+      <td class="svd-dark-border-color" data-bind="text: sequence"></td>
       <td class="svd-dark-border-color">
           <!-- ko if: isNode -->
           <span class="survey-result-marker" data-bind="css: { 'survey-result-marker--expanded': !collapsed() }">▶</span>
           <!-- /ko -->
           <span data-bind="text: title"></span></td>
+      <td class="svd-dark-border-color" data-bind="text: description"></td>
       <td class="svd-dark-border-color" data-bind="text: name"></td>
       <td class="svd-dark-border-color"><div class="survey-result-value" data-bind="text: getString(value)"></div></td>
       <td class="svd-dark-border-color" data-bind="text: getString(displayValue)"></td>

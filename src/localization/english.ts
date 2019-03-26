@@ -72,6 +72,9 @@ export var enStrings = {
     surveyResultsTable: "As Table",
     surveyResultsJson: "As JSON",
     resultsTitle: "Question Title",
+    resultsType: "Question Type",
+    resultsSequence: "Question Sequence",
+    resultsDescription: "Question Description",
     resultsName: "Question Name",
     resultsValue: "Answer Value",
     resultsDisplayValue: "Display Value",
@@ -161,6 +164,7 @@ export var enStrings = {
     pageBreakBefore: "Start new page before question in pdf?",
     pageBreakAfter: "Start new page after question in pdf?",
     hideInPdf: "Hide question in pdf?",
+    hideInPdfIfEmpty: "Hide question in pdf if not answered?",
     showPreview: "Is image preview shown?",
     storeDataAsText: "Store file content in JSON result as text",
     maxSize: "Maximum file size in bytes",
@@ -185,6 +189,8 @@ export var enStrings = {
 
     //survey
     showTitle: "Show/hide title",
+    autoPageBreak: "Use automatic page breaks",
+    breakAfterPage: "Page break after the last question in each page",
     locale: "Default language",
     mode: "Mode (edit/read only)",
     clearInvisibleValues: "Clear invisible values",
