@@ -144,6 +144,7 @@ export var titleAdorner = {
   },
   getElementName: model => "title",
   afterRender: (elements: HTMLElement[], model, editor) => {
+    if (editor.readOnly) return;
     var decoration = document.createElement("span");
     decoration.innerHTML =
       "<title-editor params='name: \"title\", model: model, editor: editor'></title-editor>";
@@ -166,6 +167,7 @@ export var itemTitleAdorner = {
     model: Survey.QuestionMultipleText,
     editor
   ) => {
+    if (editor.readOnly) return;
     for (var i = 0; i < elements.length; i++) {
       var decoration = document.createElement("span");
       decoration.innerHTML =

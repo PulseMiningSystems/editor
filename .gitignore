@@ -1,5 +1,6 @@
 .git/*
 .vs/*
+copy_editor_packages.sh
 node_modules/*
 *.cmd
 .idea

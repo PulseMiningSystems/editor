@@ -659,24 +659,15 @@
         td {
           border: 1px solid;
           padding: 0.5em 1em;
-          max-width: 400px;
           overflow: auto;
 
           &:nth-child(1) {
             position: relative;
-            width: 30%;
             font-weight: 500;
             padding-left: 2em;
           }
-          &:nth-child(2) {
-            width: 20%;
-          }
-          &:nth-child(3) {
-            width: 20%;
-          }
 
           &:nth-child(4) {
-            width: 30%;
             font-weight: 500;
           }
         }

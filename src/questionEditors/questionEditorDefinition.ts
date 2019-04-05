@@ -46,7 +46,7 @@ export class SurveyQuestionEditorDefinition {
       tabs: [{ name: "html", index: 10 }]
     },
     matrixdropdownbase: {
-      properties: ["cellType", "columnsLocation"],
+      properties: ["cellType", "columnsLocation", "showItemSequence"],
       tabs: [
         { name: "columns", index: 10 },
         { name: "rows", index: 11 },
@@ -57,10 +57,11 @@ export class SurveyQuestionEditorDefinition {
       properties: ["rowCount", "addRowLocation", "addRowText", "removeRowText"]
     },
     matrix: {
+      properties: ["showItemSequence"],
       tabs: [{ name: "columns", index: 10 }, { name: "rows", index: 11 }]
     },
     multipletext: {
-      properties: ["colCount"],
+      properties: ["colCount", "showItemSequence"],
       tabs: [{ name: "items", index: 10 }]
     },
     rating: {

@@ -8,8 +8,11 @@ export class SurveyLiveTester {
   koIsRunning = ko.observable(true);
   selectTestClick: any;
   selectPageClick: any;
+  exportCsvClick: any;
+  onExportCsvClick: any = function() {};
   koResultText = ko.observable("");
   koResultData = ko.observableArray();
+  koResultDataTest = ko.observableArray();
   koResultViewType = ko.observable("table");
   survey: Survey.Survey;
   koSurvey: any;
@@ -23,6 +26,9 @@ export class SurveyLiveTester {
   onSurveyCreatedCallback: (survey: Survey.Survey) => any;
   constructor() {
     var self = this;
+    this.exportCsvClick = function() {
+      self.onExportCsvClick(self.survey.getCsvData());
+    };
     this.selectTestClick = function() {
       self.testAgain();
     };
@@ -76,6 +82,7 @@ export class SurveyLiveTester {
           return dataItem;
         })
       );
+      self.koResultDataTest(this.getResultTestData());
     });
     this.survey.onStarted.add((sender: Survey.Survey) => {
       self.setActivePageItem(<Survey.Page>self.survey.currentPage, true);
@@ -88,6 +95,10 @@ export class SurveyLiveTester {
     this.survey.onPageVisibleChanged.add((sender: Survey.Survey, options) => {
       self.updatePageItem(options.page);
     });
+  }
+  private getResultTestData(): Array<any> {
+    let testData = this.survey.getPlainDataTest();
+    return testData;
   }
   private updatePageItem(page: Survey.Page) {
     var item = this.getPageItemByPage(page);
@@ -122,11 +133,17 @@ export class SurveyLiveTester {
   public get surveyResultsText() {
     return editorLocalization.getString("ed.surveyResults");
   }
-  public get resultsTitle() {
-    return editorLocalization.getString("ed.resultsTitle");
+  public get resultsQuestionTitle() {
+    return editorLocalization.getString("ed.resultsQuestionTitle");
+  }
+  public get resultsItemTitle() {
+    return editorLocalization.getString("ed.resultsItemTitle");
   }
   public get resultsType() {
     return editorLocalization.getString("ed.resultsType");
+  }
+  public get resultsCellType() {
+    return editorLocalization.getString("ed.resultsCellType");
   }
   public get resultsDescription() {
     return editorLocalization.getString("ed.resultsDescription");
@@ -134,8 +151,23 @@ export class SurveyLiveTester {
   public get resultsSequence() {
     return editorLocalization.getString("ed.resultsSequence");
   }
-  public get resultsName() {
-    return editorLocalization.getString("ed.resultsName");
+  public get resultsQuestionName() {
+    return editorLocalization.getString("ed.resultsQuestionName");
+  }
+  public get resultsItemName() {
+    return editorLocalization.getString("ed.resultsItemName");
+  }
+  public get resultsRowNumber() {
+    return editorLocalization.getString("ed.resultsRowNumber");
+  }
+  public get resultsRowTitle() {
+    return editorLocalization.getString("ed.resultsRowTitle");
+  }
+  public get resultsColumnNumber() {
+    return editorLocalization.getString("ed.resultsColumnNumber");
+  }
+  public get resultsColumnTitle() {
+    return editorLocalization.getString("ed.resultsColumnTitle");
   }
   public get resultsValue() {
     return editorLocalization.getString("ed.resultsValue");

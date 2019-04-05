@@ -621,6 +621,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   generateReadableJSONClick: any;
   doUndoClick: any;
   doRedoClick: any;
+  onExportCsvClick: any;
   deleteObjectClick: any;
   koState = ko.observable("");
   runSurveyClick: any;
@@ -650,7 +651,6 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     StylesManager.applyTheme(StylesManager.currentTheme());
 
     this.pages = ko.observableArray<Survey.Page>();
-
     this.koShowSaveButton = ko.observable(false);
     this.koTestSurveyWidth = ko.observable("100%");
     this.saveButtonClick = function() {
@@ -832,6 +832,9 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     this.text = "";
 
     this.addToolbarItems();
+    this.surveyLive.onExportCsvClick = function(data) {
+      self.onExportCsvClick(data);
+    };
   }
 
   tabs = ko.observableArray();

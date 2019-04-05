@@ -13,6 +13,7 @@ export var labelAdorner = {
   },
   getElementName: model => "label",
   afterRender: (elements: HTMLElement[], model, editor) => {
+    if (editor.readOnly) return;
     var decoration = document.createElement("span");
     decoration.innerHTML =
       "<title-editor params='name: \"title\", model: model, editor: editor'></title-editor>";

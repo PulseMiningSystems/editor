@@ -40,21 +40,29 @@
           <div data-bind="html: koResultText"></div>
       </div>
       <div class="svd_results_table svd-light-bg-color" data-bind="visible: koResultViewType() === 'table'">
-          <table>
+        <button id="generate_csv" class="btn btn-primary" data-bind="click: exportCsvClick">Export to csv</button>
+        <table>
               <thead>
                   <tr class="svd-light-background-color">
                       <th class="svd-dark-border-color" data-bind="text: resultsType"></th>
                       <th class="svd-dark-border-color" data-bind="text: resultsSequence"></th>
-                      <th class="svd-dark-border-color" data-bind="text: resultsTitle"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsQuestionTitle"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsItemTitle"></th>
                       <th class="svd-dark-border-color" data-bind="text: resultsDescription"></th>
-                      <th class="svd-dark-border-color" data-bind="text: resultsName"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsQuestionName"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsItemName"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsCellType"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsRowNumber"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsRowTitle"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsColumnNumber"></th>
+                      <th class="svd-dark-border-color" data-bind="text: resultsColumnTitle"></th>
                       <th class="svd-dark-border-color" data-bind="text: resultsValue"></th>
                       <th class="svd-dark-border-color" data-bind="text: resultsDisplayValue"></th>
                   </tr>
               </thead>
               <tbody>
-                  <!-- ko foreach: koResultData -->
-                  <!-- ko template: "survey-result-table-row" -->
+                  <!-- ko foreach: koResultDataTest -->
+                  <!-- ko template: "survey-result-table-row-test" -->
                   <!-- /ko -->
                   <!-- /ko -->
               </tbody>
@@ -62,6 +70,24 @@
       </div>
   </div>
   <!-- /ko -->
+</script>
+<script type="text/html" id="survey-result-table-row-test">
+  <tr>
+    <td class="svd-dark-border-color" data-bind="text: type"></td>
+    <td class="svd-dark-border-color" data-bind="text: sequence"></td>
+    <td class="svd-dark-border-color"><span data-bind="text: questionTitle"></span></td>
+    <td class="svd-dark-border-color"><span data-bind="text: itemTitle"></span></td>
+    <td class="svd-dark-border-color" data-bind="text: description"></td>
+    <td class="svd-dark-border-color" data-bind="text: questionName"></td>
+    <td class="svd-dark-border-color" data-bind="text: itemName"></td>
+    <td class="svd-dark-border-color" data-bind="text: cellType"></td>
+    <td class="svd-dark-border-color" data-bind="text: rowNumber"></td>
+    <td class="svd-dark-border-color" data-bind="text: rowTitle"></td>
+    <td class="svd-dark-border-color" data-bind="text: columnNumber"></td>
+    <td class="svd-dark-border-color" data-bind="text: columnTitle"></td>
+    <td class="svd-dark-border-color"><div class="survey-result-value" data-bind="text: getString(value)"></div></td>
+    <td class="svd-dark-border-color" data-bind="text: getString(displayValue)"></td>
+  </tr>
 </script>
 <script type="text/html" id="survey-result-table-row">
   <tr data-bind="click: function() { isNode && collapsed(!collapsed()); }">
