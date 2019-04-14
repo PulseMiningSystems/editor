@@ -68,7 +68,7 @@ export class SurveyLiveTester {
         delete json.cookieName;
       }
     }
-    this.survey = json ? new Survey.Survey(json) : new Survey.Survey();
+    this.survey = json ? new Survey.Survey(json, null, null, { useCustomNavigation: false }) : new Survey.Survey();
     if (this.onSurveyCreatedCallback) this.onSurveyCreatedCallback(this.survey);
     var self = this;
     this.survey.onComplete.add((sender: Survey.Survey) => {
