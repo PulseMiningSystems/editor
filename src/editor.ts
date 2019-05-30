@@ -622,6 +622,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   doUndoClick: any;
   doRedoClick: any;
   onExportCsvClick: any;
+  onGeneratePdfClick: any;
   deleteObjectClick: any;
   koState = ko.observable("");
   runSurveyClick: any;
@@ -835,6 +836,9 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     this.surveyLive.onExportCsvClick = function(data) {
       self.onExportCsvClick(data);
     };
+    this.surveyLive.onGeneratePdfClick = function(data) {
+      self.onGeneratePdfClick(data);
+    }
   }
 
   tabs = ko.observableArray();

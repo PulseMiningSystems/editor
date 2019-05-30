@@ -19,13 +19,14 @@
               <span class="sjs-cb-label" data-bind="text: showInvisibleElementsText"></span>
           </div>
        </label>
-       <button id="view_sample_pdf" class="btn btn-primary">View sample pdf</button>
+       <button id="view_sample_pdf" class="btn btn-primary" data-bind="click: generatePdfClick">View sample pdf</button>
   </div>
   <survey-widget params="survey: koSurvey"></survey-widget>
   <!-- ko ifnot: koIsRunning -->
   <div class="svd_test_results">
       <div class="svd_results_header">
           <button class="btn btn-primary" data-bind="click: selectTestClick, text: testSurveyAgainText"></button>
+          <button id="view_sample_pdf" class="btn btn-primary" data-bind="click: generatePdfClick">View sample pdf</button>
           <h2 data-bind="text: surveyResultsText"></h2>
       </div>
       <ul class="navbar-default container-fluid nav nav-tabs editor-tabs">

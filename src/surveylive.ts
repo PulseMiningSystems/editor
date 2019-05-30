@@ -9,6 +9,8 @@ export class SurveyLiveTester {
   selectTestClick: any;
   selectPageClick: any;
   exportCsvClick: any;
+  generatePdfClick: any;
+  onGeneratePdfClick: any = function() {};
   onExportCsvClick: any = function() {};
   koResultText = ko.observable("");
   koResultData = ko.observableArray();
@@ -28,6 +30,9 @@ export class SurveyLiveTester {
     var self = this;
     this.exportCsvClick = function() {
       self.onExportCsvClick(self.survey.getCsvData());
+    };
+    this.generatePdfClick = function() {
+      self.onGeneratePdfClick(self.getJson());
     };
     this.selectTestClick = function() {
       self.testAgain();
