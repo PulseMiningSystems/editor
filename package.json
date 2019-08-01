@@ -17,11 +17,11 @@
   },
   "dependencies": {
     "bootstrap": "^3.3.6",
-    "jquery": "^3.1.1",
-    "knockout": "^3.4.0",
-    "rmodal": "^1.0.28",
+    "jquery": "^3.4.1",
+    "knockout": "^3.5.0",
+    "rmodal": "^1.0.34",
     "sortablejs": "1.6.1",
-    "survey-knockout": "^1.0.65"
+    "survey-knockout": "^1.1.1"
   },
   "devDependencies": {
     "@types/ace": "0.0.32",
@@ -53,9 +53,9 @@
     "karma-sourcemap-loader": "0.3.7",
     "karma-webpack": "2.0.2",
     "node-sass": "4.9.2",
-    "puppeteer": "^1.8.0",
+    "puppeteer": "^1.19.0",
     "qunitjs": "2.2.0",
-    "replace-in-file": "^3.4.3",
+    "replace-in-file": "^3.4.4",
     "rimraf": "2.5.4",
     "sass-loader": "4.1.1",
     "standard-version": "4.0.0",
@@ -69,7 +69,7 @@
     "val-loader": "0.5.0",
     "webpack": "2.2.1",
     "webpack-cli": "^2.1.5",
-    "webpack-dev-server": "^2.9.1",
+    "webpack-dev-server": "^2.11.5",
     "webpack-svgstore-plugin": "4.0.1"
   }
 }
