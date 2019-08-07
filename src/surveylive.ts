@@ -31,13 +31,13 @@ export class SurveyLiveTester {
   constructor() {
     var self = this;
     this.exportCsvClick = function() {
-      self.onExportCsvClick(self.survey.getCsvData());
+      self.onExportCsvClick(self.survey.getCsvData(false));
     };
     this.generatePdfClick = function() {
       self.onGeneratePdfClick(self.getJson());
     };
     this.generateCsvClick = function() {
-      self.onGenerateCsvClick(self.survey.getCsvData());
+      self.onGenerateCsvClick(self.survey.getCsvData(true));
     };
     this.selectTestClick = function() {
       self.testAgain();
@@ -107,7 +107,7 @@ export class SurveyLiveTester {
     });
   }
   private getResultTestData(): Array<any> {
-    let testData = this.survey.getPlainDataTest();
+    let testData = this.survey.getPlainDataTest(false);
     return testData;
   }
   private updatePageItem(page: Survey.Page) {

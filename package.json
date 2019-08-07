@@ -21,7 +21,7 @@
     "knockout": "^3.5.0",
     "rmodal": "^1.0.34",
     "sortablejs": "1.6.1",
-    "survey-knockout": "^1.1.1"
+    "survey-knockout": "^1.0.74"
   },
   "devDependencies": {
     "@types/ace": "0.0.32",

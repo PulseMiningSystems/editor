@@ -2127,7 +2127,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     this.onPageExport(item);
   };
   public importPage = () => {
-    let input = <HTMLInputElement>document.getElementById("file-input");
+    let input = <HTMLInputElement>this.renderedElement.querySelector("#" + "file-input");
     let reader = new FileReader();
     reader.onload = () => this._fileLoaded(reader);
     if (!this._attached) this._attachListeners(input, reader);
