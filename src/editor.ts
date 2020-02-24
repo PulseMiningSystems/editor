@@ -24,6 +24,7 @@ import { StylesManager } from "./stylesmanager";
 import { itemAdorner } from "./adorners/item-editor";
 import { Translation } from "./translation";
 import { isProperty } from "babel-types";
+import {PageModel, Question} from "survey-knockout";
 
 /**
  * The toolbar item description
@@ -240,6 +241,10 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     (sender: SurveyEditor, options: any) => any,
     any
   > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
+  public onToolboxClicked: Survey.Event<
+      (sender: SurveyEditor, options: any) => any,
+      any
+      > = new Survey.Event<(sender: SurveyEditor, options: any) => any, any>();
   /**
    * The event is called on adding a new question into the survey. Typically, when a user dropped a Question from the Question Toolbox into designer Survey area.
    * <br/> sender the survey editor object that fires the event
@@ -632,6 +637,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   draggingToolboxItem: any;
   clickToolboxItem: any;
   dragEnd: any;
+  koTemplateType: any;
   /**
    * The Survey Editor constructor.
    * @param renderedElement HtmlElement or html element id where Survey Editor will be rendered
@@ -640,6 +646,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    * questionTypes, showOptions, generateValidJSON, isAutoSave, designerHeight, showErrorOnFailedSave, showObjectTitles, showTitlesInExpressions
    */
   constructor(renderedElement: any = null, options: any = null) {
+    this.koTemplateType = ko.observable("");
     this.koShowOptions = ko.observable();
     this.koGenerateValidJSON = ko.observable(true);
     this.koShowPropertyGrid = ko.observable(true);
@@ -765,7 +772,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
       self.doDraggingToolboxItem(item.json, e);
     };
     this.clickToolboxItem = function(item) {
-      self.doClickToolboxItem(item.json, item.category);
+      self.doClickToolboxItem(item);
     };
     this.dragEnd = function(item, e) {
       self.dragDropHelper.end();
@@ -1299,6 +1306,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     this.pages.valueHasMutated(); //TODO why this is need ? (ko problem)
     this.addPageToUI(page);
     this.setModified({ type: "PAGE_ADDED", newValue: page });
+    return page;
   };
   public deletePage = () => {
     this.deleteCurrentObject();
@@ -1806,18 +1814,68 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
   }
   private newQuestions: Array<any> = [];
   private newPanels: Array<any> = [];
-  private doClickToolboxItem(json: any, category: string) {
-    if (category === 'page') {
-      let page = JSON.parse(json);
-      this.addPage();
-      page.elements.forEach(element => {
-        var newElement = this.createNewElement(element);
-        this.doClickQuestionCore(newElement);
-      });
+  private doClickToolboxItem(item: any) {
+    if (item.category === "page") {
+      this.clickToolboxCustomPage(item);
+    } else if (item.category === "question") {
+      this.clickToolboxCustomQuestion(item);
     } else {
-      var newElement = this.createNewElement(json);
+      var newElement = this.createNewElement(item.json);
       this.doClickQuestionCore(newElement);
     }
+  }
+  private clickToolboxCustomPage(item: any) {
+    let page = typeof item.json === "string" ? JSON.parse(item.json) : item.json;
+    var newPage, questions = [];
+    page.elements.forEach(question => {
+      if (!newPage && this.survey.currentPage.elements.length > 0) {
+        newPage = this.addPage();
+      }
+      questions.push(question);
+    });
+    if (questions.length > 0) {
+      this.addQuestionsToPage(questions);
+      this.onToolboxClicked.fire(this, { item: item });
+    }
+  }
+  private addQuestionsToPage(questions: any) {
+    for (var q of questions) {
+      var newElement = this.createNewElement(q);
+      (<Question>newElement).questionId = this.newGuid();
+      newElement.name = q.name;
+      this.doClickQuestionCore(newElement);
+    }
+  }
+  private clickToolboxCustomQuestion(item: any) {
+    let question = item.json;
+    var newElement = this.createNewElement(question);
+    (<Question>newElement).questionId = this.newGuid();
+    newElement.name = question.name;
+    this.doClickQuestionCore(newElement);
+    this.onToolboxClicked.fire(this, { item: item });
+  }
+  private canAddPage(page: any) {
+    for (var q of page.elements) {
+      if (this.surveyHasQuestion(q)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  private surveyHasQuestion(question: any) {
+    for (var q of this.survey.getAllQuestions()) {
+      if (question.name === q.name) {
+        return true;
+      }
+    }
+    return false;
+  }
+  private newGuid(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0,
+          v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   }
   public copyElement(element: Survey.Base): Survey.IElement {
     var json = new Survey.JsonObject().toJsonObject(element);
@@ -2078,6 +2136,7 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    */
   public fastCopyQuestion(question: Survey.Base) {
     var newElement = this.copyElement(question);
+    (<any>newElement).questionId = this.newGuid();
     this.doClickQuestionCore(newElement, "ELEMENT_COPIED");
   }
   /**
@@ -2086,6 +2145,9 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
    */
   public copyPage = (page: Survey.PageModel): Survey.PageModel => {
     var newPage = <Survey.Page>(<any>this.copyElement(page));
+    for (var element of newPage.elements) {
+      (<any>element).questionId = this.newGuid();
+    }
     var index = this.pages.indexOf(page);
     if (index > -1) {
       this.pages.splice(index + 1, 0, newPage);
@@ -2101,13 +2163,13 @@ export class SurveyEditor implements ISurveyObjectEditorOptions {
     let json = "";
     template.pages.forEach(item => {
       if (page.name === item.name) {
-        json = JSON.stringify(item);
+        json = typeof item === "object" ? JSON.stringify(item) : item;
       }
     });
     let item = {
-      name: page.name,
-      title: page.name,
       json: json,
+      name: page.name,
+      title: page.title,
     };
     this.toolbox.addCopiedPage(item);
     return page;

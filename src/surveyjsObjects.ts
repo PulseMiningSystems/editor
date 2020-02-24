@@ -66,6 +66,11 @@ export class SurveyForDesigner extends Survey.Survey {
     var items = [];
     var options = { obj: obj, items: items };
     this.onGetMenuItems.fire(this, options);
+    // if ((<Survey.Question>obj).widgetId) {
+    //   options.items = options.items.filter(x => x.name === "delete");
+    // } else if ((<any>(<Survey.Question>obj).page).widgetId) {
+    //   options.items = [];
+    // }
     return options.items;
   }
   public get selectedElement(): any {

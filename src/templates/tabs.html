@@ -2,7 +2,7 @@
     <div
     class="row svd_survey_designer"
   >
-    <div
+    <div data-bind="visible: $root.koTemplateType() != 'question'"
       class="col-lg-2 col-md-2 col-sm-1 col-xs-1 svd_toolbox svd-dark-bg-color"
     >
       <!-- ko if: toolbox.koHasCategories -->
@@ -85,10 +85,10 @@
       <!-- /ko  -->
       <!-- /ko  -->
     </div>
-    <svd-splitter params="minLeft: 100, minRight: 600"></svd-splitter>
+    <svd-splitter data-bind="visible: $root.koTemplateType() != 'question'" params="minLeft: 100, minRight: 600"></svd-splitter>
     <div
       class="col-xs-11 svd_editors"
-      data-bind="css: {'col-lg-7 col-md-7 col-sm-8': koShowPropertyGrid, 'col-lg-10 col-md-10 col-sm-11': !koShowPropertyGrid(), 'svd_wide': !koShowPropertyGrid()}"
+      data-bind="style: { width: $root.koTemplateType() == 'question' ? '100%' : '' }, css: {'col-lg-7 col-md-7 col-sm-8': koShowPropertyGrid, 'col-lg-10 col-md-10 col-sm-11': !koShowPropertyGrid(), 'svd_wide': !koShowPropertyGrid()}"
     >
       <div class="svd_toolbar">
         <!-- ko foreach: toolbarItems -->
@@ -102,7 +102,7 @@
         </span>
         <!-- /ko -->
       </div>
-      <pages-editor params="editor:$data" data-bind="visible: koShowPagesToolbox">
+      <pages-editor params="editor:$data" data-bind="visible: koShowPagesToolbox && $root.koTemplateType() != 'question'">
       </pages-editor>
       <div
         class="svd_questions_editor svd-light-bg-color"

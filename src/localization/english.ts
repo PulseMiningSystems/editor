@@ -172,6 +172,7 @@ export var enStrings = {
     pageBreakBefore: "Start new page before question in pdf?",
     pageBreakAfter: "Start new page after question in pdf?",
     hideInPdf: "Hide question in pdf?",
+    titleColour: "Title colour",
     hideInPdfIfEmpty: "Hide question in pdf if not answered?",
     showPreview: "Is image preview shown?",
     storeDataAsText: "Store file content in JSON result as text",

@@ -1,8 +1,8 @@
 ﻿<script type="text/html" id="svd-page-selector-template">
-    <div class="svd-page-selector svd_custom_select svd-light-bg-color svd-light-border-color">
+    <div class="svd-page-selector svd_custom_select svd-light-bg-color svd-light-border-color" data-bind="visible: $root.koTemplateType() != 'page'">
         <select onmousewheel="return false;" data-bind="options: pagesSelection, value: pageSelection, optionsText: getDisplayText"></select>
     </div>
-    <div tabindex="0" class="svd-page-scroller-arrow" data-bind="key2click, clickNoFocus: moveLeft, attr: {title: getLocString('ed.moveLeft')}">
+    <div tabindex="0" class="svd-page-scroller-arrow" data-bind="visible: $root.koTemplateType() != 'page', key2click, clickNoFocus: moveLeft, attr: {title: getLocString('ed.moveLeft')}">
         <span>
             <svg-icon class="svd-secondary-icon" params="iconName: 'icon-left'"></svg-icon>
         </span>
@@ -15,7 +15,7 @@
                 <svg-icon data-bind="css: $parent.getPageMenuIconClass($data)" params="iconName: $parent.getPageMenuIconClass($data), size: 12"></svg-icon>
                 <div style="position: static">
                     <div class="svd-page-actions svd-dark-border-color svd-light-bg-color" data-bind="visible: $parent.showActions($data)">
-                        <span class="svd-page-action" data-bind="click: function(model, event) {$parent.showPageSettings($data); event.stopPropagation();}, attr: {title: $parent.getLocString('ed.editPage')}">
+                        <span class="svd-page-action" data-bind="visible: !$data.templateJson, click: function(model, event) {$parent.showPageSettings($data); event.stopPropagation();}, attr: {title: $parent.getLocString('ed.editPage')}">
                             <span>
                                 <svg-icon class="svd-primary-icon" params="iconName: 'icon-actioneditelement'"></svg-icon>
                             </span>
@@ -24,14 +24,14 @@
                         <span class="svd-page-action" data-bind="click: function(model, event) {$parent.deletePage($data); event.stopPropagation();}, attr: {title: $parent.getLocString('ed.deletePage')}, visible: !$parent.isLastPage()">
                             <svg-icon class="svd-primary-icon" params="iconName: 'icon-actiondelete'"></svg-icon>
                         </span>
-                        <span class="svda_action_separator svd-dark-border-color" data-bind="visible: !$parent.isLastPage()"></span>
-                        <span class="svd-page-action" data-bind="click: function(model, event) {$parent.copyPage($data); event.stopPropagation();}, attr: {title: $parent.getLocString('survey.Copy')}">
+                        <span class="svda_action_separator svd-dark-border-color" data-bind="visible: !$parent.isLastPage() && !$data.templateJson"></span>
+                        <span class="svd-page-action" data-bind="visible: !$data.templateJson, click: function(model, event) {$parent.copyPage($data); event.stopPropagation();}, attr: {title: $parent.getLocString('survey.Copy')}">
                             <svg-icon class="svd-primary-icon" params="iconName: 'icon-actioncopy'"></svg-icon>
                         </span>
-                        <span class="svd-page-action" data-bind="click: function(model, event) {$parent.savePage($data); event.stopPropagation();}, attr: {title: $parent.getLocString('survey.addToToolbox')}">
+                        <span class="svd-page-action" data-bind="visible: !$data.templateJson, click: function(model, event) {$parent.savePage($data); event.stopPropagation();}, attr: {title: $parent.getLocString('survey.addToToolbox')}">
                             <svg-icon class="svd-primary-icon" params="iconName: 'icon-actionaddtotoolbox'"></svg-icon>
                         </span>
-                        <span class="svd-page-action" data-bind="click: function(model, event) {$parent.exportPage($data); event.stopPropagation();}, attr: {title: 'Export'}">
+                        <span class="svd-page-action" data-bind="visible: !$data.templateJson, click: function(model, event) {$parent.exportPage($data); event.stopPropagation();}, attr: {title: 'Export'}">
                             <svg-icon class="svd-primary-icon" params="iconName: 'icon-actionupload'"></svg-icon>
                         </span>
                     </div>
@@ -39,12 +39,12 @@
             </span>
         </div>
     </div>
-    <div tabindex="0" class="svd-page-scroller-arrow" data-bind="key2click, clickNoFocus: moveRight, attr: {title: getLocString('ed.moveRight')}">
+    <div tabindex="0" class="svd-page-scroller-arrow" data-bind="visible: $root.koTemplateType() != 'page', key2click, clickNoFocus: moveRight, attr: {title: getLocString('ed.moveRight')}">
         <span>
             <svg-icon class="svd-secondary-icon" params="iconName: 'icon-right'"></svg-icon>
         </span>
     </div>
-    <div tabindex="0" class="svd-page-add" data-bind="key2click, clickNoFocus: addPage, attr: {title: getLocString('ed.addNewPage')}">
+    <div tabindex="0" class="svd-page-add" data-bind="visible: $root.koTemplateType() != 'page', key2click, clickNoFocus: addPage, attr: {title: getLocString('ed.addNewPage')}">
         <span>
             <svg-icon class="svd-secondary-icon" params="iconName: 'icon-add'"></svg-icon>
         </span>

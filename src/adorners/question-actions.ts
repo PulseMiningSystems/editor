@@ -12,7 +12,15 @@ import { QuestionConverter } from "../questionconverter";
 export class QuestionActionsAdorner {
   constructor(public question, private editor) {
     var surveyForDesigner: SurveyForDesigner = editor.survey;
-    this.actions(surveyForDesigner.getMenuItems(question));
+    let actions = surveyForDesigner.getMenuItems(question).filter(action => {
+      if (question.parent.templateJson) {
+        return false;
+      } else if (question.templateJson) {
+        return action.name === "delete";
+      }
+      return true;
+    });
+    this.actions(actions);
   }
 
   public actions = ko.observableArray<ISurveyObjectMenuItem>();
